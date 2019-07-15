@@ -181,6 +181,8 @@ pub fn handle_sub_matches(r_matches: &ArgMatches) {
                 let (b, _) = tts.approximate_automaton(&a);
 
                 let mut corpus = String::new();
+                // CHANGED
+                //corpus.push_str("aabbccdd");
                 let _ = io::stdin().read_to_string(&mut corpus);
 
                 for sentence in corpus.lines() {

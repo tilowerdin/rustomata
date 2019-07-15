@@ -12,6 +12,7 @@ mod cfg;
 mod csparsing;
 mod pmcfg;
 mod tree_stack_automata;
+mod ctf_evaluation;
 
 fn main() {
     let matches = App::new("rustomata")
@@ -23,6 +24,7 @@ fn main() {
         .subcommand(tree_stack_automata::get_sub_command())
         .subcommand(approximation::get_sub_command())
         .subcommand(csparsing::get_sub_command("csparsing"))
+        .subcommand(ctf_evaluation::get_sub_command())
         .get_matches();
 
     match matches.subcommand() {
@@ -31,6 +33,7 @@ fn main() {
         ("tsa", Some(tsa_matches)) => tree_stack_automata::handle_sub_matches(tsa_matches),
         ("approximation", Some(r_matches)) => approximation::handle_sub_matches(r_matches),
         ("csparsing", Some(r_matches)) => csparsing::handle_sub_matches(r_matches),
+        ("ctf-eval", Some(ctf_matches)) => ctf_evaluation::handle_sub_matches(ctf_matches),
         _ => (),
     }
 }
