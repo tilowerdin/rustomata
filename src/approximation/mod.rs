@@ -53,7 +53,7 @@ where
     T: Clone + Eq + Ord,
     W: Clone + MulAssign + One + Ord,
 {
-    reverse_transition_map:
+    pub reverse_transition_map:
         BTreeMap<Transition<Strategy::I2, T, W>, Vec<Transition<Strategy::I1, T, W>>>,
     strategy: Strategy,
 }
