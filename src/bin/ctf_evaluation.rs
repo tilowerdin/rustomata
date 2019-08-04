@@ -50,7 +50,7 @@ pub fn get_sub_command() -> App<'static, 'static> {
 pub fn handle_sub_matches(ctf_matches: &ArgMatches) {
 
     match ctf_matches.subcommand() {
-        ("test", _) => test()
+        ("test", _) => test(),
         _ => ()
     }
 
