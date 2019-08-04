@@ -16,10 +16,10 @@ use crate::util::integerisable::{Integerisable1, Integerisable2};
 use crate::util::push_down::Pushdown;
 use integeriser::{HashIntegeriser, Integeriser};
 
-mod from_pmcfg;
+pub mod from_pmcfg;
 mod from_str;
-mod tree_stack;
-mod tree_stack_instruction;
+pub mod tree_stack;
+pub mod tree_stack_instruction;
 
 pub use self::from_pmcfg::*;
 pub use self::tree_stack::*;
