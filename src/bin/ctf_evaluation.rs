@@ -32,6 +32,7 @@ use std::cmp::min;
 use std::ops::MulAssign;
 use num_traits::identities::One;
 
+
 const GRAMMAR_STRING : &str = "
 initial: [S]
 
@@ -118,6 +119,9 @@ pub fn get_sub_command() -> App<'static, 'static> {
                         .number_of_values(1)
                 )
         )
+        .subcommand(
+            SubCommand::with_name("test")
+        )
 }
 
 pub fn handle_sub_matches(ctf_matches: &ArgMatches) {
@@ -128,7 +132,8 @@ pub fn handle_sub_matches(ctf_matches: &ArgMatches) {
         }
         ("mcfg", Some(mcfg_matches)) => {
             handle_mcfg_matches(&mcfg_matches);
-        }
+        },
+        ("test", _) => test(),
         _ => ()
     }
 
@@ -421,3 +426,10 @@ mod test {
         assert_eq!(sorted, solution);
     }
 }
+
+
+pub fn test() {
+
+}
+
+
