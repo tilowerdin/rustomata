@@ -62,6 +62,11 @@ pub enum PushDownInstruction<A> {
         current_val: Vec<A>,
         new_val: Vec<A>,
     },
+    ReplaceK {
+        current_val: Vec<A>,
+        new_val: Vec<A>,
+        limit: usize,
+    },
 }
 
 impl<A> PushDownInstruction<A> {
@@ -77,6 +82,15 @@ impl<A> PushDownInstruction<A> {
                 current_val: current_val.iter().map(f).collect(),
                 new_val: new_val.iter().map(f).collect(),
             },
+            PushDownInstruction::ReplaceK {
+                ref current_val,
+                ref new_val,
+                limit,
+            } => PushDownInstruction::ReplaceK {
+                current_val: current_val.iter().map(f).collect(),
+                new_val: new_val.iter().map(f).collect(),
+                limit,
+            },
         }
     }
 
@@ -91,6 +105,15 @@ impl<A> PushDownInstruction<A> {
             } => PushDownInstruction::Replace {
                 current_val: map_vec_mut(current_val, f),
                 new_val: map_vec_mut(new_val, f),
+            },
+            PushDownInstruction::ReplaceK {
+                ref current_val,
+                ref new_val,
+                limit,
+            } => PushDownInstruction::ReplaceK {
+                current_val: map_vec_mut(current_val, f),
+                new_val: map_vec_mut(new_val, f),
+                limit,
             },
         }
     }
@@ -155,7 +178,17 @@ where
                         .or_insert(HashMap::new())
                         .entry((t.word, t.instruction.clone()))
                         .or_insert(W::zero()) += t.weight;
-                }
+                },
+                PushDownInstruction::ReplaceK {
+                    ref current_val, ..
+                } => {
+                    let a = current_val.first().unwrap().clone();
+                    *transition_map
+                        .entry(a)
+                        .or_insert(HashMap::new())
+                        .entry((t.word, t.instruction.clone()))
+                        .or_insert(W::zero()) += t.weight;
+                },
             }
         }
 
@@ -210,6 +243,25 @@ where
                 ref current_val,
                 ref new_val,
             } => p.replace(current_val, new_val).ok().into_iter().collect(),
+            PushDownInstruction::ReplaceK {
+                ref current_val,
+                ref new_val,
+                limit
+            } => {
+                let mut opt_pd = p.replace(current_val, new_val).ok();
+                let opt_pd = opt_pd.map(|pd| {
+                    if pd.iter().len() >= limit {
+                        let new_empty = pd.empty().clone();
+                        let mut new_elements: Vec<_> = pd.iter().cloned().rev().take(limit - 1).collect();
+                        new_elements.push(new_empty);
+                        new_elements.reverse();
+                        PushDown::from(new_elements)
+                    } else {
+                        pd
+                    }
+                });
+                opt_pd.into_iter().collect()
+            }
         }
     }
 }
@@ -429,31 +481,44 @@ where
     A: Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let fun = |cv:&Vec<_>, nv:&Vec<_>| {
+            let mut buffer1 = "".to_string();
+            let mut buffer2 = "".to_string();
+
+            let mut iter1 = cv.iter().peekable();
+            let mut iter2 = nv.iter().peekable();
+
+            while let Some(nt) = iter1.next() {
+                buffer1.push_str(format!("\"{}\"", nt).as_str());
+                if iter1.peek().is_some() {
+                    buffer1.push_str(", ");
+                }
+            }
+
+            while let Some(nt) = iter2.next() {
+                buffer2.push_str(format!("\"{}\"", nt).as_str());
+                if iter2.peek().is_some() {
+                    buffer2.push_str(", ");
+                }
+            }
+            (buffer1,buffer2)
+        };
+
         match *self {
             PushDownInstruction::Replace {
                 ref current_val,
                 ref new_val,
             } => {
-                let mut buffer1 = "".to_string();
-                let mut buffer2 = "".to_string();
-
-                let mut iter1 = current_val.iter().peekable();
-                let mut iter2 = new_val.iter().peekable();
-
-                while let Some(nt) = iter1.next() {
-                    buffer1.push_str(format!("\"{}\"", nt).as_str());
-                    if iter1.peek().is_some() {
-                        buffer1.push_str(", ");
-                    }
-                }
-
-                while let Some(nt) = iter2.next() {
-                    buffer2.push_str(format!("\"{}\"", nt).as_str());
-                    if iter2.peek().is_some() {
-                        buffer2.push_str(", ");
-                    }
-                }
-                write!(f, "(Replace {} // {})", buffer1, buffer2)
+                let (b1,b2) = fun(current_val,new_val);
+                write!(f, "(Replace {} // {})", b1, b2)
+            },
+            PushDownInstruction::ReplaceK {
+                ref current_val,
+                ref new_val,
+                limit,
+            } => {
+                let (b1,b2) = fun(current_val,new_val);
+                write!(f, "(ReplaceK {} // {} // limit: {})", b1, b2, limit)
             }
         }
     }

@@ -4,7 +4,12 @@
 
 use clap::{App, ArgMatches, SubCommand, Arg};
 
-
+use rustomata::grammars::cfg::CFG;
+use log_domain::LogDomain;
+use rustomata::automata::push_down_automaton::{PushDown, PushDownAutomaton, PushDownInstruction};
+use rustomata::approximation::ptk::PDTopKElement;
+use crate::rustomata::approximation::ApproximationStrategy;
+use rustomata::recognisable::Recognisable;
 
 const GRAMMAR_STRING : &str = "
 initial: [S]
@@ -32,6 +37,14 @@ R *
 // R *
 // ";
 
+const CFG_STRING : &str = "
+initial: [S]
+
+S → [Nt A, Nt A, Nt A, Nt A, Nt A ] # 1
+A → [T a                          ] # 0.6
+A → [T b                          ] # 0.4
+";
+
 const AUTHOR : &str = "Tilo Werdin <tilo.werdin@tu-dresden.de>";
 
 
@@ -57,6 +70,22 @@ pub fn handle_sub_matches(ctf_matches: &ArgMatches) {
 }
 
 pub fn test() {
+    let g : CFG<String, String, LogDomain<f64>> = CFG_STRING.parse().unwrap();
+    let a = PushDownAutomaton::from(g);
 
+    println!();
+    println!("{}", a);
+    println!();
+
+    let ptk = PDTopKElement::new(5);
+    let (a1,_) = ptk.approximate_automaton(&a);
+
+    println!();
+    println!("{}", a1);
+    println!();
+
+    for parse in a1.recognise(vec!["a".to_string(); 4]) {
+        println!("{:?}", parse);
+    }
 }
 

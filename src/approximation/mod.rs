@@ -9,6 +9,7 @@ use crate::util::push_down::Pushdown;
 pub mod equivalence_classes;
 pub mod relabel;
 pub mod tts;
+pub mod ptk;
 
 /// Object defining the strategies used for `approximation`
 pub trait ApproximationStrategy<T, W>: Sized

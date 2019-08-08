@@ -45,6 +45,15 @@ where
                 current_val: current_val.iter().map(self.mapping).collect(),
                 new_val: new_val.iter().map(self.mapping).collect(),
             },
+            PushDownInstruction::ReplaceK {
+                ref current_val,
+                ref new_val,
+                limit,
+            } => PushDownInstruction::ReplaceK {
+                current_val: current_val.iter().map(self.mapping).collect(),
+                new_val: new_val.iter().map(self.mapping).collect(),
+                limit,
+            }
         }
     }
 }
