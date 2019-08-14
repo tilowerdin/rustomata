@@ -26,9 +26,9 @@ impl<A> TreeStack<A> {
     }
 
     /// Applies a function `FnMut(&A) -> B` to every node in a `TreeStack<A>`.
-    pub fn map<F, B>(&self, f: &mut F) -> TreeStack<B>
+    pub fn map<F, B>(&self, f:  &F) -> TreeStack<B>
     where
-        F: FnMut(&A) -> B,
+        F: Fn(&A) -> B,
     {
         let new_value = f(&self.value);
         let new_parent = match self.parent {
@@ -39,6 +39,28 @@ impl<A> TreeStack<A> {
             .children
             .iter()
             .map(|o| o.clone().map(|v| Rc::new(v.map(f))))
+            .collect();
+        TreeStack {
+            parent: new_parent,
+            value: new_value,
+            children: new_children,
+        }
+    }
+
+    /// Applies a function `FnMut(&A) -> B` to every node in a `TreeStack<A>`.
+    pub fn map_mut<F, B>(&self, f:  &mut F) -> TreeStack<B>
+    where
+        F: FnMut(&A) -> B,
+    {
+        let new_value = f(&self.value);
+        let new_parent = match self.parent {
+            Some((i, ref p)) => Some((i, Rc::new(p.map_mut(f)))),
+            None => None,
+        };
+        let new_children = self
+            .children
+            .iter()
+            .map(|o| o.clone().map(|v| Rc::new(v.map_mut(f))))
             .collect();
         TreeStack {
             parent: new_parent,
@@ -259,7 +281,7 @@ impl<A: Clone + Eq + Hash> Integerisable1 for TreeStack<A> {
     type I = HashIntegeriser<A>;
 
     fn integerise(&self, integeriser: &mut Self::I) -> Self::AInt {
-        self.map(&mut move |v| integeriser.integerise(v.clone()))
+        self.map_mut(&mut move |v| integeriser.integerise(v.clone()))
     }
 
     fn un_integerise(aint: &Self::AInt, integeriser: &Self::I) -> Self {
