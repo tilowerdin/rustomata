@@ -89,15 +89,18 @@ where
         &mut self,
         t1: Transition<Strategy::I1, T, W>,
     ) -> Transition<Strategy::I2, T, W> {
-        let t2 = Transition {
+        let mut t2 = Transition {
             word: t1.word.clone(),
             instruction: self.approximate_instruction(&t1.instruction),
-            weight: t1.weight.clone(),
+            // weight: t1.weight.clone(),
+            weight: W::one(),
         };
+        let weight = t1.weight.clone();
         self.reverse_transition_map
             .entry(t2.clone())
             .or_insert(Vec::new())
             .push(t1);
+        t2.weight = weight;
         t2
     }
 
@@ -105,7 +108,9 @@ where
         &self,
         t2: &Transition<Strategy::I2, T, W>,
     ) -> Vec<Transition<Strategy::I1, T, W>> {
-        match self.reverse_transition_map.get(t2) {
+        let mut t = t2.clone();
+        t.weight = W::one();
+        match self.reverse_transition_map.get(&t) {
             None => Vec::new(),
             Some(v) => v.clone(),
         }

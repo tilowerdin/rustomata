@@ -15,6 +15,7 @@ use crate::rustomata::recognisable::Recognisable;
 use rustomata::recognisable::Item;
 use crate::rustomata::recognisable::automaton::Automaton;
 
+
 const GRAMMAR_STRING : &str = "
 initial: [S]
 
