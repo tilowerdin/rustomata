@@ -46,6 +46,9 @@ where
             .collect();
         let initial2 = instance.approximate_storage(automaton1.initial());
 
+
+        // collect similar transitions and sum up their weights
+        // see Denkinger 2017 "Approximation of Automata with Storage"
         let mut transition_map = HashMap::new();
 
         for t in &transitions2 {
@@ -55,7 +58,19 @@ where
                             .or_insert(W::zero()) += t.weight.clone();
         }
 
-        (Self::A2::from_transitions(transitions2, initial2), instance)
+        let transitions3 = transition_map.into_iter().flat_map(|(_,hm)| 
+        {
+            hm.into_iter().map(|((word,instruction),weight)|
+            {
+                Transition {
+                    word,
+                    instruction,
+                    weight
+                }
+            })
+        });
+
+        (Self::A2::from_transitions(transitions3, initial2), instance)
     }
 }
 

@@ -4,7 +4,6 @@
 
 use clap::{App, ArgMatches, SubCommand, Arg};
 
-use rustomata::automata::tree_stack_automaton::PosState;
 use rustomata::automata::tree_stack_automaton::TreeStackAutomaton;
 use rustomata::grammars::pmcfg::{PMCFG, PMCFGRule};
 use log_domain::LogDomain;
@@ -116,13 +115,13 @@ pub fn test() {
     println!("------ b accepting string ------");
     for Item(conf,run) in b_acc {
         println!("{}", &conf);
-        // let unapproxs = approx_inst.unapproximate_run(run);
-        // for unapprox in unapproxs {
-        //     let checked = a.check_run(unapprox);
-        //     for check in checked {
-        //         println!("{:?}", check);
-        //     }
-        // }
+        let unapproxs = approx_inst.unapproximate_run(run);
+        for unapprox in unapproxs {
+            let checked = a.check_run(unapprox);
+            for check in checked {
+                println!("{:?}", check);
+            }
+        }
         println!();
     }
     println!();
