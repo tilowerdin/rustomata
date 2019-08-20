@@ -9,7 +9,7 @@ use log_domain::LogDomain;
 use rustomata::approximation::tts::TTSElement;
 use rustomata::approximation::ApproximationStrategy;
 use rustomata::approximation::equivalence_classes::EquivalenceRelation;
-use rustomata::approximation::relabel::RlbElement;
+use rustomata::approximation::relabel::RlbElementTSA;
 use rustomata::automata::tree_stack_automaton::PosState;
 use rustomata::recognisable::Recognisable;
 use rustomata::recognisable::Item;
@@ -78,23 +78,14 @@ pub fn test() {
     println!();
     println!();
 
-    let tts = TTSElement::new();
+    let e: EquivalenceRelation<PMCFGRule<_,_,_>, String> = CLASSES_STRING.parse().unwrap();
+    let f = |ps: &PosState<_>| ps.map(|nt| e.project(nt));
+    let rlb = RlbElementTSA::new(&f);
 
-    let (b,strat1) = tts.approximate_automaton(&a);
+    let (b,strat1) = rlb.approximate_automaton(&a);
 
     println!("------ automaton b ------");
     println!("{}", &b);
-    println!();
-    println!();
-
-    let e: EquivalenceRelation<PMCFGRule<_,_,_>, String> = CLASSES_STRING.parse().unwrap();
-    let f = |ps: &PosState<_>| ps.map(|nt| e.project(nt));
-    let rlb = RlbElement::new(&f);
-
-    let (c,strat2) = rlb.approximate_automaton(&b);
-
-    println!("------ automaton c ------");
-    println!("{}", &c);
     println!();
     println!();
 
@@ -109,37 +100,26 @@ pub fn test() {
 
 
 
-    let recs_c = c.recognise(accepting_input.clone());
+    let recs_b = b.recognise(accepting_input.clone());
 
-    for Item(_,run_c) in recs_c {
-        println!("------ run c ------");
-        println!("{:?}", &run_c);
+    for Item(_,run_b) in recs_b {
+        println!("------ run b ------");
+        println!("{:?}", &run_b);
         println!();
         println!();
 
-        let unapproxs2 = strat2.unapproximate_run(run_c);
-        for unapprox2 in unapproxs2 {
+        let unapproxs1 = strat1.unapproximate_run(run_b);
+        for unapprox1 in unapproxs1 {
             // println!("------ unapproximated run ------");
             // println!("{:?}", &unapprox2);
             // println!();
             // println!();
-            let checked_bs = b.check_run(unapprox2);
-            for Item(_,checked_b) in checked_bs {
-                println!("------ run b ------");
-                println!("{:?}", &checked_b);
+            let checked_as = a.check_run(unapprox1);
+            for Item(_,checked_a) in checked_as {
+                println!("------ run a ------");
+                println!("{:?}", &checked_a);
                 println!();
                 println!();
-
-                let unapproxs1 = strat1.unapproximate_run(checked_b);
-                for unapprox1 in unapproxs1 {
-                    let checked_as = a.check_run(unapprox1);
-                    for Item(_,checked_a) in checked_as {
-                        println!("------ run a ------");
-                        println!("{:?}", &checked_a);
-                        println!();
-                        println!();
-                    }
-                }
             }
         }
     }

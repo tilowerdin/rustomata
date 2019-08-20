@@ -1,10 +1,13 @@
-use num_traits::One;
+use num_traits::{One,Zero};
 use std::collections::{BTreeMap, BinaryHeap};
-use std::ops::MulAssign;
+use std::ops::{MulAssign,AddAssign};
+use std::hash::Hash;
 
 use crate::recognisable::automaton::Automaton;
 use crate::recognisable::{Instruction, Transition};
 use crate::util::push_down::Pushdown;
+
+use std::collections::HashMap;
 
 pub mod equivalence_classes;
 pub mod relabel;
@@ -14,11 +17,11 @@ pub mod tts;
 pub trait ApproximationStrategy<T, W>: Sized
 where
     Self::I1: Clone + Eq + Instruction + Ord,
-    Self::I2: Clone + Eq + Instruction + Ord,
+    Self::I2: Clone + Eq + Instruction + Ord + Hash,
     Self::A1: Automaton<T, W, I = Self::I1>,
     Self::A2: Automaton<T, W, I = Self::I2> + Sized,
-    T: Clone + Eq + Ord,
-    W: Clone + MulAssign + One + Ord,
+    T: Clone + Eq + Ord + Hash,
+    W: Clone + MulAssign + One + Ord + AddAssign + Zero,
 {
     type I1;
     type I2;
@@ -43,6 +46,15 @@ where
             .collect();
         let initial2 = instance.approximate_storage(automaton1.initial());
 
+        let mut transition_map = HashMap::new();
+
+        for t in &transitions2 {
+            *transition_map.entry(t.instruction.clone())
+                            .or_insert(HashMap::new())
+                            .entry((t.word.clone(), t.instruction.clone()))
+                            .or_insert(W::zero()) += t.weight.clone();
+        }
+
         (Self::A2::from_transitions(transitions2, initial2), instance)
     }
 }
@@ -50,8 +62,8 @@ where
 pub struct ApproximationInstance<Strategy, T, W>
 where
     Strategy: ApproximationStrategy<T, W>,
-    T: Clone + Eq + Ord,
-    W: Clone + MulAssign + One + Ord,
+    T: Clone + Eq + Ord + Hash,
+    W: Clone + MulAssign + One + Ord + AddAssign + Zero,
 {
     reverse_transition_map:
         BTreeMap<Transition<Strategy::I2, T, W>, Vec<Transition<Strategy::I1, T, W>>>,
@@ -64,8 +76,8 @@ where
     Strategy: ApproximationStrategy<T, W>,
     Strategy::I2: Clone + Eq + Ord,
     Strategy::I1: Clone + Eq + Ord,
-    T: Clone + Eq + Ord,
-    W: Clone + MulAssign + One + Ord,
+    T: Clone + Eq + Ord + Hash,
+    W: Clone + MulAssign + One + Ord + Zero + AddAssign,
 {
     pub fn new(strategy: Strategy) -> Self {
         ApproximationInstance {
