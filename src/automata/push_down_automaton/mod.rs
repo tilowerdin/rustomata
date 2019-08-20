@@ -139,43 +139,31 @@ where
         let mut a_inter = HashIntegeriser::new();
         let mut t_inter = HashIntegeriser::new();
         let init = initial.integerise(&mut a_inter);
-        let mut transition_map = HashMap::new();
+        let mut transition_map 
+        = HashMap::new();
 
         for t in transitions
             .into_iter()
             .map(|t| t.integerise(&mut t_inter, &mut a_inter))
         {
-            match t.instruction {
+            let a = match t.instruction {
                 PushDownInstruction::Replace {
                     ref current_val, ..
-                } => {
-                    let a = current_val.first().unwrap().clone();
-                    *transition_map
-                        .entry(a)
-                        .or_insert(HashMap::new())
-                        .entry((t.word, t.instruction.clone()))
-                        .or_insert(W::zero()) += t.weight;
-                }
-            }
-        }
+                } => current_val.clone(),
+            };
 
-        let f = |(k, hm): (_, HashMap<_, _>)| {
-            (
-                k,
-                hm.into_iter()
-                    .map(|((w, i), wt)| Transition {
-                        word: w,
-                        instruction: i,
-                        weight: wt,
-                    })
-                    .collect(),
-            )
-        };
+            if !transition_map.contains_key(a.first().unwrap()) {
+                transition_map.insert(a.first().unwrap().clone(), BinaryHeap::new());
+                ()
+            }
+
+            transition_map.get_mut(a.first().unwrap()).unwrap().push(t);
+        }
 
         PushDownAutomaton {
             a_integeriser: a_inter,
             t_integeriser: t_inter,
-            transitions: Rc::new(transition_map.into_iter().map(f).collect()),
+            transitions: Rc::new(transition_map),
             initial: init,
         }
     }
