@@ -248,6 +248,12 @@ where
                 ref new_val,
                 limit
             } => {
+                // we need to differenciate cases
+                // 1. if the pushdown does not have its limit elements, we just do a normal replace
+                // 2. if the pushdown does have its limit elements, we need to create a new pushdown differently
+                //      1. if we are adding elements, cut the first elements of the PushDown off
+                //      2. if we are exchanging elements, everything is fine
+                //      3. if we are removing elements we need to add non-deterministicly every possible storage value at the bottom of the pushdown
                 let mut opt_pd = p.replace(current_val, new_val).ok();
                 let opt_pd = opt_pd.map(|pd| {
                     if pd.iter().len() >= limit {
