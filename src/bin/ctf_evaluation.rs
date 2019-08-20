@@ -3,17 +3,18 @@
 #![allow(unused_variables)]
 
 use clap::{App, ArgMatches, SubCommand, Arg};
+
+use rustomata::automata::tree_stack_automaton::PosState;
 use rustomata::automata::tree_stack_automaton::TreeStackAutomaton;
-use rustomata::grammars::pmcfg::{PMCFG,PMCFGRule};
+use rustomata::grammars::pmcfg::{PMCFG, PMCFGRule};
 use log_domain::LogDomain;
-use rustomata::approximation::tts::TTSElement;
-use rustomata::approximation::ApproximationStrategy;
 use rustomata::approximation::equivalence_classes::EquivalenceRelation;
 use rustomata::approximation::relabel::RlbElementTSA;
 use rustomata::automata::tree_stack_automaton::PosState;
 use rustomata::recognisable::Recognisable;
+use crate::rustomata::approximation::ApproximationStrategy;
 use rustomata::recognisable::Item;
-use rustomata::recognisable::automaton::Automaton;
+use crate::rustomata::recognisable::automaton::Automaton;
 
 
 const GRAMMAR_STRING : &str = "
@@ -32,6 +33,8 @@ A [\"A → [[T a, Var 0 0],  [T c, Var 0 1]     ] (A   )   # 0.5\", \"A → [[],
 B [\"B → [[T b, Var 0 0],  [T d, Var 0 1]     ] (B   )   # 0.5\", \"B → [[],  []] (    )   # 0.5\"]
 R *
 ";
+
+
 
 // const classes_string = "
 // S [\"S → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] (A, B)\"]
@@ -67,70 +70,79 @@ pub fn handle_sub_matches(ctf_matches: &ArgMatches) {
 }
 
 pub fn test() {
-    let accepting_input = vec!["a".to_string(), "b".to_string(), "c".to_string(), "d".to_string()];
+    let accepting_string = vec!["a".to_string(), "a".to_string(), "b".to_string(), "c".to_string(), "c".to_string(), "d".to_string()];
+    let not_accepting_string = vec!["a".to_string(), "b".to_string(), "c".to_string()];
 
-    let g : PMCFG<String,String,LogDomain<f64>> = GRAMMAR_STRING.parse().unwrap();
-
+    let g: PMCFG<String, String, LogDomain<f64>> = GRAMMAR_STRING.parse().unwrap();
     let a = TreeStackAutomaton::from(g);
-
-    println!("------ automaton a ------");
-    println!("{}", &a);
-    println!();
-    println!();
 
     let e: EquivalenceRelation<PMCFGRule<_,_,_>, String> = CLASSES_STRING.parse().unwrap();
     let f = |ps: &PosState<_>| ps.map(|nt| e.project(nt));
     let rlb = RlbElementTSA::new(&f);
 
-    let (b,strat1) = rlb.approximate_automaton(&a);
+    let (b, approx_inst) = rlb.approximate_automaton(&a);
 
+    let a_acc = a.recognise(accepting_string.clone());
+    let a_not_acc = a.recognise(not_accepting_string.clone());
+
+    let b_acc = b.recognise(accepting_string.clone());
+    let b_not_acc = b.recognise(not_accepting_string.clone());
+
+    println!("------ automaton a ------");
+    println!("{}", &a);
+    println!();
     println!("------ automaton b ------");
     println!("{}", &b);
     println!();
     println!();
 
-    // for trans in c.transitions() {
-    //     println!("------ unapproximate {} ------", &trans);
-    //     for unapprox in strat2.unapproximate_transition(&trans) {
-    //         println!("{}", unapprox);
-    //     }
-    //     println!();
-    //     println!();
-    // }
-
-
-
-    let recs_b = b.recognise(accepting_input.clone());
-
-    for Item(_,run_b) in recs_b {
-        println!("------ run b ------");
-        println!("{:?}", &run_b);
+    println!("------ a accepting string ------");
+    for Item(conf,_) in a_acc {
+        println!("{}", conf);
+        //println!("{}", b);
         println!();
-        println!();
+    }
+    println!();
+    println!();
 
-        let unapproxs1 = strat1.unapproximate_run(run_b);
-        for unapprox1 in unapproxs1 {
-            // println!("------ unapproximated run ------");
-            // println!("{:?}", &unapprox2);
-            // println!();
-            // println!();
-            let checked_as = a.check_run(unapprox1);
-            for Item(_,checked_a) in checked_as {
-                println!("------ run a ------");
-                println!("{:?}", &checked_a);
-                println!();
-                println!();
+    println!("------ a not accepting string ------");
+    for Item(conf,_) in a_not_acc {
+        println!("{}", conf);
+        println!();
+    }
+    println!();
+    println!();
+    
+    println!("------ b accepting string ------");
+    for Item(conf,run) in b_acc {
+        println!("{}", &conf);
+        // let unapproxs = approx_inst.unapproximate_run(run);
+        // for unapprox in unapproxs {
+        //     let checked = a.check_run(unapprox);
+        //     for check in checked {
+        //         println!("{:?}", check);
+        //     }
+        // }
+        println!();
+    }
+    println!();
+    println!();
+    
+    println!("------ b not accepting string ------");
+    for Item(conf,run) in b_not_acc {
+        println!("{}", &conf);
+        let unapproxs = approx_inst.unapproximate_run(run);
+        for unapprox in unapproxs {
+            let checked = a.check_run(unapprox);
+            for check in checked {
+                println!("{:?}", check);
             }
         }
-    }
-
-    let runs = a.recognise(accepting_input.clone());
-    for Item(_,run) in runs {
-        println!("------ orig run a ------");
-        println!("{:?}", &run);
-        println!();
+        
         println!();
     }
+    println!();
+    println!();
     
 }
 
