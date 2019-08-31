@@ -43,6 +43,7 @@ where
     type TInt;
 
     /// Builds an `Automaton` from transitions and an initial storage configuration.
+    /// every transition should only be contained once in the iterator
     fn from_transitions<It>(transitions: It, initial: <Self::I as Instruction>::Storage) -> Self
     where
         It: IntoIterator<Item = Transition<Self::I, T, W>>;

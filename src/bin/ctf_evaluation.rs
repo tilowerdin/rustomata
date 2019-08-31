@@ -4,6 +4,7 @@
 
 use clap::{App, ArgMatches, SubCommand, Arg};
 
+
 use std::fs::File;
 use std::io::Read;
 use std::rc::Rc;
@@ -19,7 +20,7 @@ use rustomata::recognisable::{Recognisable,Item};
 
 use rustomata::automata::push_down_automaton::{PushState, PushDownAutomaton};
 use rustomata::approximation::equivalence_classes::EquivalenceRelation;
-use rustomata::approximation::relabel::RlbElement;
+use rustomata::approximation::relabel::{RlbElement,RlbElementTSA};
 use std::str::FromStr;
 
 use rustomata::grammars::cfg::CFG;
@@ -31,6 +32,7 @@ use std::cmp::min;
 
 use std::ops::MulAssign;
 use num_traits::identities::One;
+
 
 
 
@@ -50,6 +52,8 @@ A [\"A → [[T a, Var 0 0],  [T c, Var 0 1]     ] (A   )   # 0.5\", \"A → [[],
 B [\"B → [[T b, Var 0 0],  [T d, Var 0 1]     ] (B   )   # 0.5\", \"B → [[],  []] (    )   # 0.5\"]
 R *
 ";
+
+
 
 // const classes_string = "
 // S [\"S → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] (A, B)\"]
@@ -441,7 +445,80 @@ mod test {
 
 
 pub fn test() {
+    let accepting_string = vec!["a".to_string(), "a".to_string(), "b".to_string(), "c".to_string(), "c".to_string(), "d".to_string()];
+    let not_accepting_string = vec!["a".to_string(), "b".to_string(), "c".to_string()];
 
+    let g: PMCFG<String, String, LogDomain<f64>> = GRAMMAR_STRING.parse().unwrap();
+    let a = TreeStackAutomaton::from(g);
+
+    let e: EquivalenceRelation<PMCFGRule<_,_,_>, String> = CLASSES_STRING.parse().unwrap();
+    let f = |ps: &PosState<_>| ps.map(|nt| e.project(nt));
+    let rlb = RlbElementTSA::new(&f);
+
+    let (b, approx_inst) = rlb.approximate_automaton(&a);
+
+    let a_acc = a.recognise(accepting_string.clone());
+    let a_not_acc = a.recognise(not_accepting_string.clone());
+
+    let b_acc = b.recognise(accepting_string.clone());
+    let b_not_acc = b.recognise(not_accepting_string.clone());
+
+    println!("------ automaton a ------");
+    println!("{}", &a);
+    println!();
+    println!("------ automaton b ------");
+    println!("{}", &b);
+    println!();
+    println!();
+
+    println!("------ a accepting string ------");
+    for Item(conf,_) in a_acc {
+        println!("{}", conf);
+        //println!("{}", b);
+        println!();
+    }
+    println!();
+    println!();
+
+    println!("------ a not accepting string ------");
+    for Item(conf,_) in a_not_acc {
+        println!("{}", conf);
+        println!();
+    }
+    println!();
+    println!();
+    
+    println!("------ b accepting string ------");
+    for Item(conf,run) in b_acc {
+        println!("{}", &conf);
+        let unapproxs = approx_inst.unapproximate_run(run);
+        for unapprox in unapproxs {
+            let checked = a.check_run(unapprox);
+            for check in checked {
+                println!("{:?}", check);
+            }
+        }
+        println!();
+    }
+    println!();
+    println!();
+    
+    println!("------ b not accepting string ------");
+    for Item(conf,run) in b_not_acc {
+        println!("{}", &conf);
+        let unapproxs = approx_inst.unapproximate_run(run);
+        for unapprox in unapproxs {
+            let checked = a.check_run(unapprox);
+            for check in checked {
+                println!("{:?}", check);
+            }
+        }
+        
+        println!();
+    }
+    println!();
+    println!();
+    
 }
 
 
