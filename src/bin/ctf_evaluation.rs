@@ -33,6 +33,7 @@ use std::ops::MulAssign;
 use num_traits::identities::One;
 
 
+
 const GRAMMAR_STRING : &str = "
 initial: [S]
 
@@ -155,7 +156,7 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
 
     let a = TreeStackAutomaton::from(g);
 
-    let approx_matches = get_approx_args(mcfg_matches);
+    let mut approx_matches = get_approx_args(mcfg_matches);
     
     // let generate = |aut : Automaton<T,W>, strats : Vec<(String, Option<String>)>| {
     //     if let Some(strat) = strats.pop() {
@@ -186,16 +187,27 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
     //         _ => ()
     //     }
     // }
-    create_ctf_recogniser(a,approx_matches);
+
+    let recogniser = coarse_to_fine_recogniser!(a, approx_matches);
+    // let tts_string = "tts".to_string();
+    // let ptk_string = "ptk".to_string();
+    // let rlb_string = "rlb".to_string();
+    // match approx_matches.pop() {
+        
+    //     Some((tts_string, _)) => {
+    //         let s1 = TTSElement::new();
+    //         match approx_matches.pop() {
+    //             None => recogniser = coarse_to_fine_recogniser!(a; s1),
+    //             _ => panic!("Not implemented yet!"),
+    //         }
+    //     },
+    //     _ => panic!("Not implemented yet!"),
+        
+    // }
+    
 }
 
-pub fn create_ctf_recogniser<T,W>(automaton : Automaton<T,W>, strats : Vec<(String, Option<String>)>)
-{
-    if let Some(strat) = strats.pop() {
-        println!("{:?}", strat);
-        create_ctf_recogniser(automaton, strats);
-    }
-}
+
 
 // search for the approximation arguments and sort them in a list
 // with their parameters if present

@@ -166,5 +166,25 @@ macro_rules! coarse_to_fine_recogniser {
                 approximation_instance: Rc::new(strat_instance),
             }
         }
+    };
+    ( $automaton:expr, $strategies:expr ) => {
+        {
+            let tts_string = "tts".to_string();
+            let ptk_string = "ptk".to_string();
+            let rlb_string = "rlb".to_string();
+            match $strategies.pop() { 
+                Some((tts_string, _)) => {
+                    let s1 = TTSElement::new();
+                    match $strategies.pop() {
+                        None => coarse_to_fine_recogniser!($automaton; s1),
+                        Some((rlb_string, rlb_file)) => {
+                            
+                        }
+                        Some(_) => panic!("Not implemented yet!"),
+                    }
+                },
+                _ => panic!("Not implemented yet!"),
+            }
+        }
     }
 }
