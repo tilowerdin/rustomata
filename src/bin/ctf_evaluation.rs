@@ -7,6 +7,7 @@ use clap::{App, ArgMatches, SubCommand, Arg};
 
 use std::fs::File;
 use std::io::Read;
+use std::io;
 use std::rc::Rc;
 
 use log_domain::LogDomain;
@@ -144,6 +145,24 @@ pub fn handle_sub_matches(ctf_matches: &ArgMatches) {
 
 }
 
+macro_rules! recognise {
+    ( $recogniser:expr ) => {
+        {
+            let mut corpus = String::new();
+            io::stdin().read_to_string(&mut corpus);
+            for line in corpus.lines() {
+                let word = line.split_whitespace().map(|x| x.to_string()).collect();
+                let parses = $recogniser.recognise(word);
+
+                for Item(conf,parse) in parses {
+                    println!("{:?}", conf);
+                    println!("{:?}", parse);
+                }
+            }
+        }
+    }
+}
+
 // handle a given cfg grammar with a pda
 pub fn handle_cfg_matches(cfg_matches : &ArgMatches) {
     println!("cfg\n");
@@ -155,6 +174,8 @@ pub fn handle_cfg_matches(cfg_matches : &ArgMatches) {
 pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
     println!("mcfg\n");
 
+
+
     // TODO
     let g : PMCFG<String, String, LogDomain<f64>> = GRAMMAR_STRING.parse().unwrap();
 
@@ -162,52 +183,124 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
 
     let mut approx_matches = get_approx_args(mcfg_matches);
     
-    // let generate = |aut : Automaton<T,W>, strats : Vec<(String, Option<String>)>| {
-    //     if let Some(strat) = strats.pop() {
-    //         println!("{:?}",strat);
-    //         generate(aut,strats);
-    //     }
-    // };
+    
+    let tts_string = "tts".to_string();
+    let ptk_string = "ptk".to_string();
+    let rlb_string = "rlb".to_string();
 
 
+    // TODO: this is not very elegant and it is only possible to parse 
+    // explicitly programmed combinations of approximation strategies
+    // the problem is that the strategies do not have the same type and
+    // it is impossible to create a list of Box<dyn ApproximationStrategy<...>>
+    // since ApproximationStrategy itself has generic parameters
+    // currently possible:
+    //      - tts
+    //      - tts, rlb
+    //      - rlb
+    //      - rlb, tts
+    // currently developing:
+    //      - rlb, tts, rlb
+    // match first strategy
+    match approx_matches.pop() {
+        Some((first_strategy, fst_additional)) => {
+            if first_strategy == tts_string {
+                
+                // create the tts strategy
+                let s1 = TTSElement::new();
 
-    // coarse_to_fine_recogniser!(a, approx_matches);
+                // match the second strategy having tts as first strategy
+                match approx_matches.pop() {
+                    // no second strategy
+                    // use original macro to create the CoarseToFineRecogniser
+                    None => {
+                        let recogniser = coarse_to_fine_recogniser!(a; s1);
+                        recognise!(recogniser);
+                    },
 
-    // for (s, op_s) in approx_matches {
-    //     match (&s[..], op_s) {
-    //         ("tts", _) => {
-    //             let tts = TTSElement::new();
-    //         },
-    //         ("rlb", Some(eq_cl_file)) => {
-    //             let mut classes_file = File::open(eq_cl_file).unwrap();
-    //             let mut classes_string = String::new();
-    //             classes_file.read_to_string(&mut classes_string);
-    //             let rel = EquivalenceRelation::from_str(&classes_string).unwrap();
+                    Some((second_strategy, sec_additional)) => {
+                        if second_strategy == rlb_string {
+                            let rlb_file = sec_additional.unwrap();
+                            // create the rlb strategy
+                            let classes_string = read_file(rlb_file);
+                            let e: EquivalenceRelation<PMCFGRule<_,_,_>, String> = classes_string.parse().unwrap();
+                            let f = |ps: &PosState<_>| ps.map(|nt| e.project(nt));
+                            let s2 = RlbElement::new(&f);
 
-    //             let mapping = |ps : &PosState<_>| ps.map(|nt| rel.project(nt));
-    //             let rlb = RlbElement::new(&mapping);
+                            // match the third strategy having tts, rlb
+                            match approx_matches.pop() {
+                                // no third strategy
+                                // use original macro to create the CoarseToFineRecogniser
+                                None => {
+                                    let recogniser = coarse_to_fine_recogniser!(a; s1, s2);
+                                    recognise!(recogniser);
+                                },
 
-    //         },
-    //         _ => ()
-    //     }
-    // }
+                                Some((third_strategy, trd_additional)) => {
+                                    if third_strategy == ptk_string {
+                                        panic!("ptk is currently not implemented!");
+                                    } else {
+                                        panic!("{} not allowed here", third_strategy);
+                                    }
+                                },
+                            }
+                        } else if second_strategy == ptk_string {
+                            panic!("ptk is currently not implemented!");
+                        } else {
+                            panic!("{} not allowed here", second_strategy);
+                        }
+                    }
+                }
+            } else if first_strategy == rlb_string {
+                let rlb_file = fst_additional.unwrap();
 
-    let recogniser = coarse_to_fine_recogniser!(a, approx_matches);
-    // let tts_string = "tts".to_string();
-    // let ptk_string = "ptk".to_string();
-    // let rlb_string = "rlb".to_string();
-    // match approx_matches.pop() {
-        
-    //     Some((tts_string, _)) => {
-    //         let s1 = TTSElement::new();
-    //         match approx_matches.pop() {
-    //             None => recogniser = coarse_to_fine_recogniser!(a; s1),
-    //             _ => panic!("Not implemented yet!"),
-    //         }
-    //     },
-    //     _ => panic!("Not implemented yet!"),
-        
-    // }
+                // create the rlb strategy
+                let classes_string = read_file(rlb_file);
+                let e: EquivalenceRelation<PMCFGRule<_,_,_>, String> = classes_string.parse().unwrap();
+                let f = |ps: &PosState<_>| ps.map(|nt| e.project(nt));
+                let s1 = RlbElementTSA::new(&f);
+
+                // match the second strategy having rlb as first strategy
+                match approx_matches.pop() {
+                    // no second strategy 
+                    // use original macro to create CoarseToFineRecogniser
+                    None => {
+                        let recogniser = coarse_to_fine_recogniser!(a; s1);
+                        recognise!(recogniser);
+                    },
+
+                    Some((second_strategy, sec_additional)) => {
+                        if second_strategy == tts_string {
+                            let s2 = TTSElement::new();
+
+                            // match the third strategy having rlb, tts
+                            match approx_matches.pop() {
+                                // no third strategy 
+                                // use original macro to create CoarseToFineRecogniser
+                                None => {
+                                    let recogniser = coarse_to_fine_recogniser!(a; s1, s2);
+                                    recognise!(recogniser);
+                                },
+
+                                Some((third_strategy, trd_additional)) => {
+                                    if third_strategy == ptk_string {
+                                        panic!("ptk is currently not implemented!");
+                                    } else {
+                                        panic!("{} not allowed here", third_strategy);
+                                    }
+                                },
+                            }
+                        } else {
+                            panic!("{} not allowed here", second_strategy);
+                        }
+                    },
+                }
+            } else {
+                panic!("{} not allowed here", first_strategy);
+            }
+        },
+        _ => panic!("Not implemented yet!"),
+    };
     
 }
 
@@ -259,6 +352,14 @@ fn get_tuple_vec(arg_matches : &ArgMatches, s : &str)
         } 
     }
     vec
+}
+
+// returns the content of the file given by the `path` string
+fn read_file(path: String) -> String {
+    let mut file = File::open(path).unwrap();
+    let mut string = String::new();
+    file.read_to_string(&mut string);
+    string
 }
 
 pub fn handle_sub_matches1(ctf_matches: &ArgMatches) {

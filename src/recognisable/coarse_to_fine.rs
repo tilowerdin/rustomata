@@ -9,6 +9,10 @@ use crate::recognisable::automaton::Automaton;
 use crate::recognisable::{Instruction, Item, Recognisable};
 use search::agenda::weighted::Weighted;
 
+
+use std::fs::File;
+use std::io::{self, Read};
+
 pub struct CoarseToFineRecogniser<Rec, SubRec, Strategy, T, W>
 where
     Rec: Automaton<T, W>,
@@ -146,6 +150,8 @@ where
     }
 }
 
+
+
 #[macro_export]
 macro_rules! coarse_to_fine_recogniser {
     ( $automaton:expr; $strategy:expr ) => {
@@ -168,24 +174,4 @@ macro_rules! coarse_to_fine_recogniser {
             }
         }
     };
-    ( $automaton:expr, $strategies:expr ) => {
-        {
-            let tts_string = "tts".to_string();
-            let ptk_string = "ptk".to_string();
-            let rlb_string = "rlb".to_string();
-            match $strategies.pop() { 
-                Some((tts_string, _)) => {
-                    let s1 = TTSElement::new();
-                    match $strategies.pop() {
-                        None => coarse_to_fine_recogniser!($automaton; s1),
-                        Some((rlb_string, rlb_file)) => {
-                            
-                        }
-                        Some(_) => panic!("Not implemented yet!"),
-                    }
-                },
-                _ => panic!("Not implemented yet!"),
-            }
-        }
-    }
 }
