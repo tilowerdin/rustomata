@@ -1,3 +1,5 @@
+#![feature(test)]
+
 extern crate integeriser;
 extern crate log_domain;
 #[macro_use]

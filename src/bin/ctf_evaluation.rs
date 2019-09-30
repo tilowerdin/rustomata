@@ -174,8 +174,6 @@ pub fn handle_cfg_matches(cfg_matches : &ArgMatches) {
 pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
     println!("mcfg\n");
 
-
-
     // TODO
     let g : PMCFG<String, String, LogDomain<f64>> = GRAMMAR_STRING.parse().unwrap();
 
@@ -299,7 +297,7 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
                 panic!("{} not allowed here", first_strategy);
             }
         },
-        _ => panic!("Not implemented yet!"),
+        _ => panic!("You need to choose at least one approximation strategy."),
     };
     
 }
@@ -517,31 +515,6 @@ where
     println!("---------- {} ----------", title);
     println!("{:?}", anything);
     println!();
-}
-
-#[cfg(test)]
-mod test {
-    #[test]
-    fn zip_test() {
-        let vec1 = vec![1,2,3];
-        let vec2 = vec!["a","b","c"];
-
-        let zipped = super::zip(&vec1, &vec2);
-        assert_eq!(zipped, vec![(1,"a"), (2,"b"), (3,"c")]);
-    }
-
-    #[test]
-    fn zip_ord_test() {
-        let vec1 = vec![2,7,3];
-        let vec2 = vec!["a","b","c"];
-
-        let solution : Vec<_> = vec![(2,"a"), (3,"c"), (7,"b")];
-
-        let mut sorted = super::zip(&vec1, &vec2);
-        sorted.sort();
-        // let sorted = zipped.sort_by(|a, b| a.0.cmp(&b.0));
-        assert_eq!(sorted, solution);
-    }
 }
 
 

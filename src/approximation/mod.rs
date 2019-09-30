@@ -12,6 +12,7 @@ use std::collections::HashMap;
 pub mod equivalence_classes;
 pub mod relabel;
 pub mod tts;
+pub mod benchmarks;
 
 /// Object defining the strategies used for `approximation`
 pub trait ApproximationStrategy<T, W>: Sized

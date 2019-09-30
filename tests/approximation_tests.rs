@@ -1,3 +1,5 @@
+#![feature(test)]
+
 use rustomata::automata::tree_stack_automaton::TreeStackAutomaton;
 use rustomata::recognisable::automaton::Automaton;
 use rustomata::recognisable::Item;
@@ -10,6 +12,11 @@ use rustomata::approximation::relabel::{RlbElement,RlbElementTSA};
 use rustomata::approximation::tts::TTSElement;
 use rustomata::approximation::ApproximationStrategy;
 use rustomata::recognisable::Recognisable;
+use rustomata::coarse_to_fine_recogniser;
+use std::rc::Rc;
+use rustomata::recognisable::coarse_to_fine::CoarseToFineRecogniser;
+
+extern crate test;
 
 fn get_grammar_string() -> String {
     // creating the grammar string that accepts a^i b^j c^i d^j
@@ -120,3 +127,4 @@ fn test_collecting_weights_of_similar_transitions() {
 
     assert_eq!(1, count);
 }
+
