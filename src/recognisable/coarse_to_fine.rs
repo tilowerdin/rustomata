@@ -1,12 +1,17 @@
-use num_traits::One;
+use num_traits::{One,Zero};
 use std::collections::BinaryHeap;
-use std::ops::MulAssign;
+use std::ops::{MulAssign,AddAssign};
 use std::rc::Rc;
+use std::hash::Hash;
 
 use crate::approximation::{ApproximationInstance, ApproximationStrategy};
 use crate::recognisable::automaton::Automaton;
 use crate::recognisable::{Instruction, Item, Recognisable};
 use search::agenda::weighted::Weighted;
+
+
+use std::fs::File;
+use std::io::{self, Read};
 
 pub struct CoarseToFineRecogniser<Rec, SubRec, Strategy, T, W>
 where
@@ -19,8 +24,8 @@ where
     Strategy: ApproximationStrategy<T, W> + Sized,
     Strategy::I1: Instruction,
     Strategy::I2: Instruction,
-    T: Clone + Eq + Ord,
-    W: Clone + MulAssign + One + Ord,
+    T: Clone + Eq + Ord + Hash,
+    W: Clone + MulAssign + One + Ord + Zero + AddAssign,
 {
     pub recogniser: Rc<Rec>,
     pub sublevel: Rc<SubRec>,
@@ -32,8 +37,8 @@ where
     Rec: Automaton<T, W>,
     Strategy: 'a + ApproximationStrategy<T, W>,
     Strategy::I1: Instruction,
-    T: 'a + Clone + Eq + Ord,
-    W: 'a + Clone + MulAssign + One + Ord,
+    T: 'a + Clone + Eq + Ord + Hash,
+    W: 'a + Clone + MulAssign + One + Ord + Zero + AddAssign,
 {
     sublevel_parses:
         Box<Iterator<Item = Item<<Strategy::I2 as Instruction>::Storage, Strategy::I2, T, W>> + 'a>,
@@ -48,8 +53,8 @@ where
     Rec: Automaton<T, W>,
     Strategy: 'a + ApproximationStrategy<T, W>,
     Strategy::I1: Instruction,
-    T: 'a + Clone + Eq + Ord,
-    W: 'a + Clone + MulAssign + One + Ord,
+    T: 'a + Clone + Eq + Ord + Hash,
+    W: 'a + Clone + MulAssign + One + Ord + Zero + AddAssign,
 {
     fn peek_input(
         &mut self,
@@ -83,8 +88,8 @@ where
     Strategy: ApproximationStrategy<T, W>,
     Strategy::I1: Instruction + Ord,
     <Strategy::I1 as Instruction>::Storage: Ord,
-    T: Clone + Eq + Ord,
-    W: Clone + MulAssign + One + Ord,
+    T: Clone + Eq + Ord + Hash,
+    W: Clone + MulAssign + One + Ord + Zero + AddAssign,
 {
     type Item = Item<<Strategy::I1 as Instruction>::Storage, Strategy::I1, T, W>;
 
@@ -121,8 +126,8 @@ where
     Strategy: ApproximationStrategy<T, W>,
     Strategy::I1: Instruction + Ord,
     <Strategy::I1 as Instruction>::Storage: Ord,
-    T: Clone + Eq + Ord,
-    W: Clone + MulAssign + One + Ord,
+    T: Clone + Eq + Ord + Hash,
+    W: Clone + MulAssign + One + Ord + Zero + AddAssign,
 {
     type Parse = Item<<Strategy::I1 as Instruction>::Storage, Strategy::I1, T, W>;
 
@@ -145,6 +150,8 @@ where
     }
 }
 
+
+
 #[macro_export]
 macro_rules! coarse_to_fine_recogniser {
     ( $automaton:expr; $strategy:expr ) => {
@@ -166,5 +173,5 @@ macro_rules! coarse_to_fine_recogniser {
                 approximation_instance: Rc::new(strat_instance),
             }
         }
-    }
+    };
 }

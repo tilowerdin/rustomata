@@ -29,7 +29,7 @@ pub enum TreeStackInstruction<A> {
 }
 
 impl<A> TreeStackInstruction<A> {
-    fn map<F, B>(&self, mut f: F) -> TreeStackInstruction<B>
+    pub fn map<F, B>(&self, mut f: F) -> TreeStackInstruction<B>
     where
         F: FnMut(&A) -> B,
     {

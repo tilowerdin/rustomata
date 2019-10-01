@@ -568,7 +568,7 @@ where
                 let (b1,b2) = fun(current_val,new_val);
                 let mut string = String::new();
                 for val in possible_values {
-                    string = format!("{}{}",string,",");
+                    string = format!("{}{}{}",string,val,",");
                 }
                 write!(f, "(ReplaceK {} // {} // limit: {} // possible_values: {})", b1, b2, limit, string)
             }

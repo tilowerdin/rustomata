@@ -1,0 +1,37 @@
+initial: 0
+
+Transition [] (Down ("A" → [[T "a", Var 0 0], [T "c", Var 0 1]] ("A")  # 0.5, 0, 1) ("A" → [[T "a", Var 0 0], [T "c", Var 0 1]] ("A")  # 0.5, 0, 0) ("A" → [[T "a", Var 0 0], [T "c", Var 0 1]] ("A")  # 0.5, 0, 1))  # 1
+Transition [] (Down ("A" → [[T "a", Var 0 0], [T "c", Var 0 1]] ("A")  # 0.5, 0, 1) ("S" → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] ("A", "B")  # 1, 0, 0) ("S" → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] ("A", "B")  # 1, 0, 1))  # 1
+Transition [] (Up 0 ("S" → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] ("A", "B")  # 1, 0, 2) ("A" → [[], []] ()  # 0.5, 0, 0) ("A" → [[], []] ()  # 0.5, 1, 0))  # 1
+Transition [] (Up 0 ("S" → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] ("A", "B")  # 1, 0, 2) ("A" → [[T "a", Var 0 0], [T "c", Var 0 1]] ("A")  # 0.5, 0, 1) ("A" → [[T "a", Var 0 0], [T "c", Var 0 1]] ("A")  # 0.5, 1, 0))  # 1
+Transition ["a"] (Push 0 ("A" → [[T "a", Var 0 0], [T "c", Var 0 1]] ("A")  # 0.5, 0, 0) ("A" → [[], []] ()  # 0.5, 0, 0))  # 0.5
+Transition ["a"] (Push 0 ("A" → [[T "a", Var 0 0], [T "c", Var 0 1]] ("A")  # 0.5, 0, 0) ("A" → [[T "a", Var 0 0], [T "c", Var 0 1]] ("A")  # 0.5, 0, 0))  # 0.5
+Transition [] (Down ("A" → [[T "a", Var 0 0], [T "c", Var 0 1]] ("A")  # 0.5, 1, 1) ("A" → [[T "a", Var 0 0], [T "c", Var 0 1]] ("A")  # 0.5, 1, 0) ("A" → [[T "a", Var 0 0], [T "c", Var 0 1]] ("A")  # 0.5, 1, 1))  # 1
+Transition [] (Down ("A" → [[T "a", Var 0 0], [T "c", Var 0 1]] ("A")  # 0.5, 1, 1) ("S" → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] ("A", "B")  # 1, 0, 2) ("S" → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] ("A", "B")  # 1, 0, 3))  # 1
+Transition [] (Push 1 ("S" → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] ("A", "B")  # 1, 0, 1) ("B" → [[], []] ()  # 0.5, 0, 0))  # 0.5
+Transition [] (Push 1 ("S" → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] ("A", "B")  # 1, 0, 1) ("B" → [[T "b", Var 0 0], [T "d", Var 0 1]] ("B")  # 0.5, 0, 0))  # 0.5
+Transition [] (Down ("B" → [[], []] ()  # 0.5, 0, 0) ("B" → [[T "b", Var 0 0], [T "d", Var 0 1]] ("B")  # 0.5, 0, 0) ("B" → [[T "b", Var 0 0], [T "d", Var 0 1]] ("B")  # 0.5, 0, 1))  # 1
+Transition [] (Down ("B" → [[], []] ()  # 0.5, 0, 0) ("S" → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] ("A", "B")  # 1, 0, 1) ("S" → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] ("A", "B")  # 1, 0, 2))  # 1
+Transition ["c"] (Up 0 ("A" → [[T "a", Var 0 0], [T "c", Var 0 1]] ("A")  # 0.5, 1, 0) ("A" → [[], []] ()  # 0.5, 0, 0) ("A" → [[], []] ()  # 0.5, 1, 0))  # 1
+Transition ["c"] (Up 0 ("A" → [[T "a", Var 0 0], [T "c", Var 0 1]] ("A")  # 0.5, 1, 0) ("A" → [[T "a", Var 0 0], [T "c", Var 0 1]] ("A")  # 0.5, 0, 1) ("A" → [[T "a", Var 0 0], [T "c", Var 0 1]] ("A")  # 0.5, 1, 0))  # 1
+Transition ["b"] (Push 0 ("B" → [[T "b", Var 0 0], [T "d", Var 0 1]] ("B")  # 0.5, 0, 0) ("B" → [[], []] ()  # 0.5, 0, 0))  # 0.5
+Transition ["b"] (Push 0 ("B" → [[T "b", Var 0 0], [T "d", Var 0 1]] ("B")  # 0.5, 0, 0) ("B" → [[T "b", Var 0 0], [T "d", Var 0 1]] ("B")  # 0.5, 0, 0))  # 0.5
+Transition ["d"] (Up 0 ("B" → [[T "b", Var 0 0], [T "d", Var 0 1]] ("B")  # 0.5, 1, 0) ("B" → [[], []] ()  # 0.5, 0, 0) ("B" → [[], []] ()  # 0.5, 1, 0))  # 1
+Transition ["d"] (Up 0 ("B" → [[T "b", Var 0 0], [T "d", Var 0 1]] ("B")  # 0.5, 1, 0) ("B" → [[T "b", Var 0 0], [T "d", Var 0 1]] ("B")  # 0.5, 0, 1) ("B" → [[T "b", Var 0 0], [T "d", Var 0 1]] ("B")  # 0.5, 1, 0))  # 1
+Transition [] (Down ("A" → [[], []] ()  # 0.5, 0, 0) ("A" → [[T "a", Var 0 0], [T "c", Var 0 1]] ("A")  # 0.5, 0, 0) ("A" → [[T "a", Var 0 0], [T "c", Var 0 1]] ("A")  # 0.5, 0, 1))  # 1
+Transition [] (Down ("A" → [[], []] ()  # 0.5, 0, 0) ("S" → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] ("A", "B")  # 1, 0, 0) ("S" → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] ("A", "B")  # 1, 0, 1))  # 1
+Transition [] (Down ("S" → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] ("A", "B")  # 1, 0, 4) I @)  # 1
+Transition [] (Down ("B" → [[T "b", Var 0 0], [T "d", Var 0 1]] ("B")  # 0.5, 0, 1) ("B" → [[T "b", Var 0 0], [T "d", Var 0 1]] ("B")  # 0.5, 0, 0) ("B" → [[T "b", Var 0 0], [T "d", Var 0 1]] ("B")  # 0.5, 0, 1))  # 1
+Transition [] (Down ("B" → [[T "b", Var 0 0], [T "d", Var 0 1]] ("B")  # 0.5, 0, 1) ("S" → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] ("A", "B")  # 1, 0, 1) ("S" → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] ("A", "B")  # 1, 0, 2))  # 1
+Transition [] (Down ("B" → [[T "b", Var 0 0], [T "d", Var 0 1]] ("B")  # 0.5, 1, 1) ("B" → [[T "b", Var 0 0], [T "d", Var 0 1]] ("B")  # 0.5, 1, 0) ("B" → [[T "b", Var 0 0], [T "d", Var 0 1]] ("B")  # 0.5, 1, 1))  # 1
+Transition [] (Down ("B" → [[T "b", Var 0 0], [T "d", Var 0 1]] ("B")  # 0.5, 1, 1) ("S" → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] ("A", "B")  # 1, 0, 3) ("S" → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] ("A", "B")  # 1, 0, 4))  # 1
+Transition [] (Push 0 I ("S" → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] ("A", "B")  # 1, 0, 0))  # 1
+Transition [] (Push 0 ("S" → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] ("A", "B")  # 1, 0, 0) ("A" → [[], []] ()  # 0.5, 0, 0))  # 0.5
+Transition [] (Push 0 ("S" → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] ("A", "B")  # 1, 0, 0) ("A" → [[T "a", Var 0 0], [T "c", Var 0 1]] ("A")  # 0.5, 0, 0))  # 0.5
+Transition [] (Down ("A" → [[], []] ()  # 0.5, 1, 0) ("A" → [[T "a", Var 0 0], [T "c", Var 0 1]] ("A")  # 0.5, 1, 0) ("A" → [[T "a", Var 0 0], [T "c", Var 0 1]] ("A")  # 0.5, 1, 1))  # 1
+Transition [] (Down ("A" → [[], []] ()  # 0.5, 1, 0) ("S" → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] ("A", "B")  # 1, 0, 2) ("S" → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] ("A", "B")  # 1, 0, 3))  # 1
+Transition [] (Up 1 ("S" → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] ("A", "B")  # 1, 0, 3) ("B" → [[], []] ()  # 0.5, 0, 0) ("B" → [[], []] ()  # 0.5, 1, 0))  # 1
+Transition [] (Up 1 ("S" → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] ("A", "B")  # 1, 0, 3) ("B" → [[T "b", Var 0 0], [T "d", Var 0 1]] ("B")  # 0.5, 0, 1) ("B" → [[T "b", Var 0 0], [T "d", Var 0 1]] ("B")  # 0.5, 1, 0))  # 1
+Transition [] (Down ("B" → [[], []] ()  # 0.5, 1, 0) ("B" → [[T "b", Var 0 0], [T "d", Var 0 1]] ("B")  # 0.5, 1, 0) ("B" → [[T "b", Var 0 0], [T "d", Var 0 1]] ("B")  # 0.5, 1, 1))  # 1
+Transition [] (Down ("B" → [[], []] ()  # 0.5, 1, 0) ("S" → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] ("A", "B")  # 1, 0, 3) ("S" → [[Var 0 0, Var 1 0, Var 0 1, Var 1 1]] ("A", "B")  # 1, 0, 4))  # 1
+
