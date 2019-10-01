@@ -66,6 +66,7 @@ pub enum PushDownInstruction<A> {
         current_val: Vec<A>,
         new_val: Vec<A>,
         limit: usize,
+        possible_values: Vec<A>,
     },
 }
 
@@ -86,10 +87,12 @@ impl<A> PushDownInstruction<A> {
                 ref current_val,
                 ref new_val,
                 limit,
+                ref possible_values,
             } => PushDownInstruction::ReplaceK {
                 current_val: current_val.iter().map(f).collect(),
                 new_val: new_val.iter().map(f).collect(),
                 limit,
+                possible_values: possible_values.iter().map(f).collect(),
             },
         }
     }
@@ -110,10 +113,12 @@ impl<A> PushDownInstruction<A> {
                 ref current_val,
                 ref new_val,
                 limit,
+                ref possible_values,
             } => PushDownInstruction::ReplaceK {
                 current_val: map_vec_mut(current_val, f),
                 new_val: map_vec_mut(new_val, f),
                 limit,
+                possible_values: map_vec_mut(possible_values, f),
             },
         }
     }
@@ -246,7 +251,8 @@ where
             PushDownInstruction::ReplaceK {
                 ref current_val,
                 ref new_val,
-                limit
+                limit,
+                ref possible_values,
             } => {
                 // we need to differenciate cases
                 // 1. if the pushdown does not have its limit elements, we just do a normal replace
@@ -254,19 +260,54 @@ where
                 //      1. if we are adding elements, cut the first elements of the PushDown off
                 //      2. if we are exchanging elements, everything is fine
                 //      3. if we are removing elements we need to add non-deterministicly every possible storage value at the bottom of the pushdown
-                let mut opt_pd = p.replace(current_val, new_val).ok();
-                let opt_pd = opt_pd.map(|pd| {
-                    if pd.iter().len() >= limit {
-                        let new_empty = pd.empty().clone();
-                        let mut new_elements: Vec<_> = pd.iter().cloned().rev().take(limit - 1).collect();
-                        new_elements.push(new_empty);
-                        new_elements.reverse();
-                        PushDown::from(new_elements)
-                    } else {
-                        pd
-                    }
-                });
-                opt_pd.into_iter().collect()
+                
+                let mut normal_replace = false;
+
+                if p.iter().count() < limit {
+                    normal_replace = true;
+                }
+
+                let mut new_pd_opt = p.replace(current_val, new_val).ok();
+                match new_pd_opt {
+                    None => Vec::new(),
+                    Some(new_pd) => {
+                        let len_new_pd = new_pd.iter().len();
+                        let pushdown_vec = 
+                            if len_new_pd > limit {
+                                let new_empty = new_pd.empty().clone();
+                                let mut new_elements: Vec<_> = new_pd.iter().cloned().rev().take(limit - 1).collect();
+                                new_elements.push(new_empty);
+                                new_elements.reverse();
+                                vec![PushDown::from(new_elements)]
+                            } else if !normal_replace && len_new_pd < limit {
+                                // create new pushDowns
+                                let new_pd_vec : Vec<A> = new_pd.elements.clone();
+                                let mut list : Vec<Vec<A>> = vec![new_pd_vec.clone()];
+                                for _ in 0..(limit-len_new_pd) {
+                                    let mut new_list : Vec<Vec<A>>= Vec::new();
+                                    for elem in list {
+                                        for new in possible_values {
+                                            let mut new_elem = elem.clone();
+                                            new_elem.push(new.clone());
+                                            new_list.push(new_elem);
+                                        }
+                                    }
+                                    new_list.push(new_pd_vec.clone());
+                                    list = new_list;
+                                }
+                                let mut pushdowns = Vec::new();
+                                for vec in list {
+                                    pushdowns.push(PushDown::from(vec));
+                                }
+                                
+                                pushdowns
+                            } else {
+                                vec![new_pd]
+                            };
+
+                        pushdown_vec
+                    },
+                }
             }
         }
     }
@@ -522,9 +563,14 @@ where
                 ref current_val,
                 ref new_val,
                 limit,
+                ref possible_values
             } => {
                 let (b1,b2) = fun(current_val,new_val);
-                write!(f, "(ReplaceK {} // {} // limit: {})", b1, b2, limit)
+                let mut string = String::new();
+                for val in possible_values {
+                    string = format!("{}{}",string,",");
+                }
+                write!(f, "(ReplaceK {} // {} // limit: {} // possible_values: {})", b1, b2, limit, string)
             }
         }
     }

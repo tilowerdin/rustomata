@@ -4,10 +4,15 @@ use std::ops::AddAssign;
 use std::ops::MulAssign;
 use std::hash::Hash;
 use num_traits::One;
+use std::collections::HashSet;
 
 
 use crate::automata::push_down_automaton::{PushDown,PushDownInstruction,PushDownAutomaton};
 use crate::approximation::ApproximationStrategy;
+
+use crate::recognisable::automaton::Automaton;
+use crate::approximation::ApproximationInstance;
+use crate::recognisable::Transition;
 
 
 
@@ -60,9 +65,71 @@ impl<A, T, W> ApproximationStrategy<T, W> for PDTopKElement<A>
                     current_val: current_val.clone(),
                     new_val: new_val.clone(),
                     limit: self.size,
+                    // TODO possible_values get set in approximate_automaton
+                    possible_values: Vec::new(),
                 }
             },
         }
+    }
+
+    fn approximate_automaton(
+        self,
+        automaton1: &Self::A1,
+    ) -> (Self::A2, ApproximationInstance<Self, T, W>) {
+        let mut instance = ApproximationInstance::new(self);
+        let transitions2: Vec<_> = automaton1
+            .transitions()
+            .map(|t| instance.approximate_transition(t.clone()))
+            .collect();
+        let initial2 = instance.approximate_storage(automaton1.initial());
+
+        let mut possible_values_set : HashSet<A> = HashSet::new();
+
+        for trans in &transitions2 {
+            match trans.instruction {
+                PushDownInstruction::ReplaceK {
+                    ref current_val,
+                    ref new_val,
+                    limit,
+                    ref possible_values,
+                } => {
+                    for val in current_val {
+                        possible_values_set.insert(val.clone());
+                    }
+                    for val in new_val {
+                        possible_values_set.insert(val.clone());
+                    }
+                },
+                _ => ()
+            }
+        }
+
+        
+        let mut transitions3 = Vec::new();
+
+        for mut trans in transitions2 {
+            match trans.instruction {
+                PushDownInstruction::ReplaceK {
+                    current_val,
+                    new_val,
+                    limit,
+                    ..
+                } => transitions3.push(
+                    Transition {
+                        instruction: PushDownInstruction::ReplaceK {
+                                    current_val,
+                                    new_val,
+                                    limit,
+                                    possible_values: possible_values_set.iter().map(|val| val.clone()).collect()
+                                    },
+                        ..trans
+                    
+                }),
+                _ => transitions3.push(trans.clone()),
+            }
+        }
+
+        (Self::A2::from_transitions(transitions3, initial2), instance)
     }
 }
 

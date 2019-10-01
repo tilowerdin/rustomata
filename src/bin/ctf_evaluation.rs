@@ -10,6 +10,9 @@ use rustomata::automata::push_down_automaton::{PushDown, PushDownAutomaton, Push
 use rustomata::approximation::ptk::PDTopKElement;
 use crate::rustomata::approximation::ApproximationStrategy;
 use rustomata::recognisable::Recognisable;
+use rustomata::recognisable::Item;
+use rustomata::recognisable::coarse_to_fine::CoarseToFineRecogniser;
+use std::rc::Rc;
 
 const GRAMMAR_STRING : &str = "
 initial: [S]
@@ -78,14 +81,29 @@ pub fn test() {
     println!();
 
     let ptk = PDTopKElement::new(5);
+    
+    // let rec = coarse_to_fine_recogniser!(a; ptk);
+
+    // for Item(i1,i2) in rec.recognise(vec!["a".to_string(); 5]) {
+    //     println!("{}", i1);
+    //     println!("{:?}", i2);
+    // }
+
+
+
+
     let (a1,_) = ptk.approximate_automaton(&a);
 
     println!();
     println!("{}", a1);
     println!();
 
-    for parse in a1.recognise(vec!["a".to_string(); 4]) {
-        println!("{:?}", parse);
+
+
+
+    for Item(i1,i2) in a1.recognise(vec!["a".to_string(); 4]) {
+        println!("{}", i1);
+        println!("{:?}", i2);
     }
 }
 
