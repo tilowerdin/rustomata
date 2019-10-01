@@ -536,7 +536,7 @@ pub fn test() {
     println!("{}", a);
     println!();
 
-    let ptk = PDTopKElement::new(6);
+    let ptk = PDTopKElement::new(3);
     
     // let rec = coarse_to_fine_recogniser!(a; ptk);
 
@@ -558,13 +558,14 @@ pub fn test() {
 
 
     for Item(i1,i2) in a1.recognise(vec!["a".to_string(); 5]) {
-        println!("a1 recognized");
 
         let unapproxs = s1.unapproximate_run(i2);
         for unapprox in unapproxs {
             let parses = a.check_run(unapprox);
             for parse in parses {
-                println!("a checked successfully");
+                println!("{:?}", parse
+
+                    );
             }
         }
     }

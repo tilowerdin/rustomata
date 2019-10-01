@@ -6,6 +6,7 @@ use std::hash::Hash;
 use crate::recognisable::automaton::Automaton;
 use crate::recognisable::{Instruction, Transition};
 use crate::util::push_down::Pushdown;
+use crate::automata::push_down_automaton::PushDownInstruction;
 
 use std::collections::HashMap;
 
@@ -136,14 +137,18 @@ where
         t2
     }
 
+
     pub fn unapproximate_transition(
         &self,
         t2: &Transition<Strategy::I2, T, W>,
     ) -> Vec<Transition<Strategy::I1, T, W>> {
         let mut t = t2.clone();
+        
         t.weight = W::one();
         match self.reverse_transition_map.get(&t) {
-            None => Vec::new(),
+            None => {
+                Vec::new()
+            },
             Some(v) => v.clone(),
         }
     }

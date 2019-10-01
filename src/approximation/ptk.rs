@@ -108,25 +108,36 @@ impl<A, T, W> ApproximationStrategy<T, W> for PDTopKElement<A>
         let mut transitions3 = Vec::new();
 
         for mut trans in transitions2 {
-            match trans.instruction {
+            let old_trans = trans.clone();
+            let new_trans = match trans.instruction {
                 PushDownInstruction::ReplaceK {
                     current_val,
                     new_val,
                     limit,
                     ..
-                } => transitions3.push(
-                    Transition {
+                } => Transition {
                         instruction: PushDownInstruction::ReplaceK {
                                     current_val,
                                     new_val,
                                     limit,
                                     possible_values: possible_values_set.iter().map(|val| val.clone()).collect()
                                     },
-                        ..trans
-                    
-                }),
-                _ => transitions3.push(trans.clone()),
-            }
+                        ..old_trans.clone()
+                    },
+                _ => trans.clone(),
+            };
+            transitions3.push(new_trans.clone());
+            let get_trans = Transition {
+                weight: W::one(),
+                ..old_trans
+            };
+            let new_map_trans = Transition {
+                weight: W::one(),
+                ..new_trans
+            };
+            let reverse_transitions = instance.reverse_transition_map.get(&get_trans).unwrap();
+            instance.reverse_transition_map.insert(new_map_trans, reverse_transitions.clone());
+            instance.reverse_transition_map.remove(&get_trans);
         }
 
         (Self::A2::from_transitions(transitions3, initial2), instance)
