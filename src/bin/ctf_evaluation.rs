@@ -184,12 +184,13 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
     println!("mcfg\n");
 
     // TODO
-    let g : PMCFG<String, String, LogDomain<f64>> = GRAMMAR_STRING.parse().unwrap();
+    let grammar_file = mcfg_matches.value_of("grammar").unwrap();
+    let grammar_string = read_file(grammar_file.to_string());
+    let g : PMCFG<String, String, LogDomain<f64>> = grammar_string.parse().unwrap();
 
     let a = TreeStackAutomaton::from(g);
 
     let mut approx_matches = get_approx_args(mcfg_matches);
-    
     
     let tts_string = "tts".to_string();
     let ptk_string = "ptk".to_string();
@@ -206,10 +207,11 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
     // currently possible:
     //      - tts
     //      - tts, rlb
+    //      - tts, rlb, ptk
+    //      - tts, ptk
     //      - rlb
     //      - rlb, tts
-    // currently developing:
-    //      - rlb, tts, rlb
+
     // match first strategy
     match approx_matches.pop() {
         Some((first_strategy, fst_additional)) => {
@@ -249,7 +251,20 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
                                 Some((third_strategy, trd_additional)) => {
                                     if third_strategy == ptk_string {
                                         println!("ptk");
-                                        panic!("ptk is currently not implemented!");
+                                        let k : usize = trd_additional.unwrap().parse().unwrap();
+
+                                        let s3 = PDTopKElement::new(k);
+
+                                        // try matching a fourth strategy which is currently not allowed
+                                        match approx_matches.pop() {
+                                            None => {
+                                                let recogniser = coarse_to_fine_recogniser!(a; s1, s2, s3);
+                                                recognise!(recogniser);
+                                            },
+                                            Some(_) => {
+                                                panic!("currently you are not allowed to use more than three strategies!");
+                                            },
+                                        }
                                     } else {
                                         panic!("{} not allowed here", third_strategy);
                                     }
@@ -338,7 +353,21 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
                                 Some((third_strategy, trd_additional)) => {
                                     if third_strategy == ptk_string {
                                         println!("ptk");
-                                        panic!("ptk is currently not implemented!");
+
+                                        let k : usize = trd_additional.unwrap().parse().unwrap();
+
+                                        let s3 = PDTopKElement::new(k);
+
+                                        // try matching a fourth strategy which is currently not allowed
+                                        match approx_matches.pop() {
+                                            None => {
+                                                let recogniser = coarse_to_fine_recogniser!(a; s1, s2, s3);
+                                                recognise!(recogniser);
+                                            },
+                                            Some(_) => {
+                                                panic!("currently you are not allowed to use more than three strategies!");
+                                            },
+                                        }
                                     } else {
                                         panic!("{} not allowed here", third_strategy);
                                     }
