@@ -195,7 +195,9 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
     let ptk_string = "ptk".to_string();
     let rlb_string = "rlb".to_string();
 
+    approx_matches.reverse();
 
+    println!("{:?}", approx_matches);
     // TODO: this is not very elegant and it is only possible to parse 
     // explicitly programmed combinations of approximation strategies
     // the problem is that the strategies do not have the same type and
@@ -212,7 +214,7 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
     match approx_matches.pop() {
         Some((first_strategy, fst_additional)) => {
             if first_strategy == tts_string {
-                
+                println!("tts");
                 // create the tts strategy
                 let s1 = TTSElement::new();
 
@@ -227,6 +229,7 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
 
                     Some((second_strategy, sec_additional)) => {
                         if second_strategy == rlb_string {
+                            println!("rlb");
                             let rlb_file = sec_additional.unwrap();
                             // create the rlb strategy
                             let classes_string = read_file(rlb_file);
@@ -245,6 +248,7 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
 
                                 Some((third_strategy, trd_additional)) => {
                                     if third_strategy == ptk_string {
+                                        println!("ptk");
                                         panic!("ptk is currently not implemented!");
                                     } else {
                                         panic!("{} not allowed here", third_strategy);
@@ -252,13 +256,54 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
                                 },
                             }
                         } else if second_strategy == ptk_string {
-                            panic!("ptk is currently not implemented!");
+                            println!("ptk");
+                            // parse the second argument into an integer that limits the pushdown
+                            let k : usize = sec_additional.unwrap().parse().unwrap();
+
+                            // create the ptk strategy
+                            let s2 = PDTopKElement::new(k);
+
+                            // match the third strategy having tts, ptk
+                            match approx_matches.pop() {
+                                // no third strategy
+                                // use original macro to create the CoarseToFineRecogniser
+                                None => {
+                                    let recogniser = coarse_to_fine_recogniser!(a; s1, s2);
+                                    recognise!(recogniser);
+                                },
+                                Some((third_strategy, trd_additional)) => {
+                                    if third_strategy == rlb_string {
+                                        println!("rlb");
+                                        let rlb_file = trd_additional.unwrap();
+                                        // create rlb strategy
+                                        let classes_string = read_file(rlb_file);
+                                        let e: EquivalenceRelation<PMCFGRule<_,_,_>, String> = classes_string.parse().unwrap();
+                                        let f = |ps: &PosState<_>| ps.map(|nt| e.project(nt));
+                                        let s3 = RlbElement::new(&f);
+
+                                        // try matching a fourth strategy which is currently not allowed
+                                        match approx_matches.pop() {
+                                            None => {
+                                                let recogniser = coarse_to_fine_recogniser!(a; s1, s2, s3);
+                                                recognise!(recogniser);
+                                            },
+                                            Some(_) => {
+                                                panic!("currently you are not allowed to use more than three strategies!");
+                                            },
+                                        }
+                                    } else {
+                                        panic!("{} not allowed here or not implemented yet", third_strategy);
+                                    }
+                                },
+                                
+                            }
                         } else {
                             panic!("{} not allowed here", second_strategy);
                         }
                     }
                 }
             } else if first_strategy == rlb_string {
+                println!("rlb");
                 let rlb_file = fst_additional.unwrap();
 
                 // create the rlb strategy
@@ -278,6 +323,7 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
 
                     Some((second_strategy, sec_additional)) => {
                         if second_strategy == tts_string {
+                            println!("tts");
                             let s2 = TTSElement::new();
 
                             // match the third strategy having rlb, tts
@@ -291,6 +337,7 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
 
                                 Some((third_strategy, trd_additional)) => {
                                     if third_strategy == ptk_string {
+                                        println!("ptk");
                                         panic!("ptk is currently not implemented!");
                                     } else {
                                         panic!("{} not allowed here", third_strategy);
@@ -329,6 +376,7 @@ pub fn get_approx_args(arg_matches : &ArgMatches) -> Vec<(String, Option<String>
     vec.append(&mut get_tuple_vec(arg_matches, "ptk"));
 
     vec.sort();
+    println!("{:?}", vec);
     vec.iter().map(|(_,a,b)| (a.clone(),b.clone())).collect()
 }
 

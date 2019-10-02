@@ -104,7 +104,6 @@ impl<A, T, W> ApproximationStrategy<T, W> for PDTopKElement<A>
             }
         }
 
-        
         let mut transitions3 = Vec::new();
 
         for mut trans in transitions2 {
@@ -152,6 +151,8 @@ mod test {
     use super::PDTopKElement;
     use crate::approximation::ApproximationStrategy;
     use crate::recognisable::Recognisable;
+    use crate::recognisable::automaton::Automaton;
+    use crate::recognisable::Item;
 
     fn get_grammar() -> CFG<String,String,LogDomain<f64>> {
         let r0_string = "S → [Nt A, Nt A, Nt A, Nt A, Nt A ] # 1";
@@ -184,6 +185,36 @@ mod test {
         assert_ne!(None, a.recognise(vec!["a".to_string(), "a".to_string(), "a".to_string(), "a".to_string(), "a".to_string()]).next());
         assert_ne!(None, b.recognise(vec!["a".to_string(), "a".to_string(), "a".to_string(), "a".to_string(), "a".to_string()]).next());
         assert_ne!(None, b.recognise(vec!["a".to_string(), "a".to_string(), "a".to_string(), "a".to_string(), "a".to_string(), "a".to_string(), "a".to_string()]).next());
+    }
+
+    #[test]
+    fn test_ptk() {
+        let g = get_grammar();
+
+        let a = PushDownAutomaton::from(g);
+
+        let ptk = PDTopKElement::new
+        (3);
+
+        let (b,s) = ptk.approximate_automaton(&a);
+
+        let input : Vec<_> = vec!["a","a","a","a","a"].iter().map(|a| a.to_string()).collect();
+
+        let mut found_one = false;
+
+        let b_runs = b.recognise(input);
+
+        for Item(_b_conf, b_run) in b_runs {
+            let b_unapproxs = s.unapproximate_run(b_run);
+            for b_unapprox in b_unapproxs {
+                let a_runs = a.check_run(b_unapprox);
+                for Item(_a_conf,_a_run) in a_runs {
+                    found_one = true;
+                }
+            }
+        }
+
+        assert!(found_one);
     }
 
     // #[test]
