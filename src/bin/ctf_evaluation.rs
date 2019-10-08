@@ -55,6 +55,9 @@ B [\"B → [[T b, Var 0 0],  [T d, Var 0 1]     ] (B   )   # 0.5\", \"B → [[],
 R *
 ";
 
+const CLASSES_STRING2 : &str ="
+A *
+";
 
 
 // const classes_string = "
@@ -184,12 +187,13 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
     println!("mcfg\n");
 
     // TODO
-    let g : PMCFG<String, String, LogDomain<f64>> = GRAMMAR_STRING.parse().unwrap();
+    let grammar_file = mcfg_matches.value_of("grammar").unwrap();
+    let grammar_string = read_file(grammar_file.to_string());
+    let g : PMCFG<String, String, LogDomain<f64>> = grammar_string.parse().unwrap();
 
     let a = TreeStackAutomaton::from(g);
 
     let mut approx_matches = get_approx_args(mcfg_matches);
-    
     
     let tts_string = "tts".to_string();
     let ptk_string = "ptk".to_string();
@@ -206,10 +210,11 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
     // currently possible:
     //      - tts
     //      - tts, rlb
+    //      - tts, rlb, ptk
+    //      - tts, ptk
     //      - rlb
     //      - rlb, tts
-    // currently developing:
-    //      - rlb, tts, rlb
+
     // match first strategy
     match approx_matches.pop() {
         Some((first_strategy, fst_additional)) => {
@@ -249,7 +254,20 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
                                 Some((third_strategy, trd_additional)) => {
                                     if third_strategy == ptk_string {
                                         println!("ptk");
-                                        panic!("ptk is currently not implemented!");
+                                        let k : usize = trd_additional.unwrap().parse().unwrap();
+
+                                        let s3 = PDTopKElement::new(k);
+
+                                        // try matching a fourth strategy which is currently not allowed
+                                        match approx_matches.pop() {
+                                            None => {
+                                                let recogniser = coarse_to_fine_recogniser!(a; s1, s2, s3);
+                                                recognise!(recogniser);
+                                            },
+                                            Some(_) => {
+                                                panic!("currently you are not allowed to use more than three strategies!");
+                                            },
+                                        }
                                     } else {
                                         panic!("{} not allowed here", third_strategy);
                                     }
@@ -319,6 +337,7 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
                     None => {
                         let recogniser = coarse_to_fine_recogniser!(a; s1);
                         recognise!(recogniser);
+                        //recogniser.recognise(vec!["a","a","c","c"].iter().map(|a| a.to_string()).collect());
                     },
 
                     Some((second_strategy, sec_additional)) => {
@@ -338,7 +357,21 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
                                 Some((third_strategy, trd_additional)) => {
                                     if third_strategy == ptk_string {
                                         println!("ptk");
-                                        panic!("ptk is currently not implemented!");
+
+                                        let k : usize = trd_additional.unwrap().parse().unwrap();
+
+                                        let s3 = PDTopKElement::new(k);
+
+                                        // try matching a fourth strategy which is currently not allowed
+                                        match approx_matches.pop() {
+                                            None => {
+                                                let recogniser = coarse_to_fine_recogniser!(a; s1, s2, s3);
+                                                recognise!(recogniser);
+                                            },
+                                            Some(_) => {
+                                                panic!("currently you are not allowed to use more than three strategies!");
+                                            },
+                                        }
                                     } else {
                                         panic!("{} not allowed here", third_strategy);
                                     }
@@ -574,46 +607,54 @@ where
     println!();
 }
 
-
 pub fn test() {
+    let g : PMCFG<String, String, LogDomain<f64>> = GRAMMAR_STRING.parse().unwrap();
 
-    let g : CFG<String, String, LogDomain<f64>> = CFG_STRING.parse().unwrap();
-    let a = PushDownAutomaton::from(g);
+    let a = TreeStackAutomaton::from(g);
 
-    println!();
+    let rel : EquivalenceRelation<PMCFGRule<_,_,_>,String> = EquivalenceRelation::from_str(CLASSES_STRING2).unwrap();
+    let mapping = |ps: &PosState<_>| ps.map(|nt| rel.project(nt));
+    let rlb = RlbElementTSA::new(&mapping);
+
+    let recogniser = coarse_to_fine_recogniser!(a; rlb);
+
+    let input = vec!["a","a","c","c"].iter().map(|a| a.to_string()).collect();
+
+    let runs = recogniser.recognise(input);
+
+    for run in runs {
+        println!("rec recognised");
+    }
+}
+
+pub fn test1() {
+    let g: PMCFG<String, String, LogDomain<f64>> = GRAMMAR_STRING.parse().unwrap();
+
+    let a = TreeStackAutomaton::from(g);
+
     println!("{}", a);
-    println!();
 
-    let ptk = PDTopKElement::new(3);
-    
-    // let rec = coarse_to_fine_recogniser!(a; ptk);
+    let rel : EquivalenceRelation<PMCFGRule<_,_,_>,String> 
+        = EquivalenceRelation::from_str(CLASSES_STRING).unwrap();
+    let mapping = |ps: &PosState<_>| ps.map(|nt| rel.project(nt));
+    let rlb = RlbElementTSA::new(&mapping);
 
-    // for Item(i1,i2) in rec.recognise(vec!["a".to_string(); 5]) {
-    //     println!("{}", i1);
-    //     println!("{:?}", i2);
-    // }
+    let (b,s) = rlb.approximate_automaton(&a);
 
+    println!("{}", b);
 
+    let input = vec!["a","a","c","c"].iter().map(|a| a.to_string()).collect();
 
-
-    let (a1,s1) = ptk.approximate_automaton(&a);
-
-    println!();
-    println!("{}", a1);
-    println!();
-
-
-
-
-    for Item(i1,i2) in a1.recognise(vec!["a".to_string(); 5]) {
-
-        let unapproxs = s1.unapproximate_run(i2);
+    let b_runs = b.recognise(input);
+    for Item(_,b_run) in b_runs {
+        println!("b_run");
+        let unapproxs = s.unapproximate_run(b_run);
         for unapprox in unapproxs {
-            let parses = a.check_run(unapprox);
-            for parse in parses {
-                println!("{:?}", parse
-
-                    );
+            println!("unapprox");
+            let a_runs = a.check_run(unapprox);
+            for Item(_,a_run) in a_runs {
+                println!("a_run");
+                
             }
         }
     }
