@@ -186,7 +186,6 @@ pub fn handle_cfg_matches(cfg_matches : &ArgMatches) {
 pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
     println!("mcfg\n");
 
-    // TODO
     let grammar_file = mcfg_matches.value_of("grammar").unwrap();
     let grammar_string = read_file(grammar_file.to_string());
     let g : PMCFG<String, String, LogDomain<f64>> = grammar_string.parse().unwrap();
@@ -212,8 +211,10 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
     //      - tts, rlb
     //      - tts, rlb, ptk
     //      - tts, ptk
+    //      - tts, ptk, rlb
     //      - rlb
     //      - rlb, tts
+    //      - rlb, tts, ptk
 
     // match first strategy
     match approx_matches.pop() {
@@ -238,8 +239,9 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
                             let rlb_file = sec_additional.unwrap();
                             // create the rlb strategy
                             let classes_string = read_file(rlb_file);
-                            let e: EquivalenceRelation<PMCFGRule<_,_,_>, String> = classes_string.parse().unwrap();
-                            let f = |ps: &PosState<_>| ps.map(|nt| e.project(nt));
+                            //let e: EquivalenceRelation<PMCFGRule<_,_,_>, String> = classes_string.parse().unwrap();
+                            let e: EquivalenceRelation<String, String> = classes_string.parse().unwrap();
+                            let f = |ps: &PosState<PMCFGRule<_,_,_>>| ps.map(|r| r.map_nonterminals(|nt| e.project(nt)));
                             let s2 = RlbElement::new(&f);
 
                             // match the third strategy having tts, rlb
@@ -295,8 +297,8 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
                                         let rlb_file = trd_additional.unwrap();
                                         // create rlb strategy
                                         let classes_string = read_file(rlb_file);
-                                        let e: EquivalenceRelation<PMCFGRule<_,_,_>, String> = classes_string.parse().unwrap();
-                                        let f = |ps: &PosState<_>| ps.map(|nt| e.project(nt));
+                                        let e: EquivalenceRelation<String, String> = classes_string.parse().unwrap();
+                                        let f = |ps: &PosState<PMCFGRule<_,_,_>>| ps.map(|r| r.map_nonterminals(|nt| e.project(nt)));
                                         let s3 = RlbElement::new(&f);
 
                                         // try matching a fourth strategy which is currently not allowed
@@ -326,8 +328,8 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
 
                 // create the rlb strategy
                 let classes_string = read_file(rlb_file);
-                let e: EquivalenceRelation<PMCFGRule<_,_,_>, String> = classes_string.parse().unwrap();
-                let f = |ps: &PosState<_>| ps.map(|nt| e.project(nt));
+                let e: EquivalenceRelation<String, String> = classes_string.parse().unwrap();
+                let f = |ps: &PosState<PMCFGRule<_,_,_>>| ps.map(|r| r.map_nonterminals(|nt| e.project(nt)));
                 let s1 = RlbElementTSA::new(&f);
 
                 // match the second strategy having rlb as first strategy
