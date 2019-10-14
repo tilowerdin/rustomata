@@ -153,7 +153,7 @@ pub fn handle_sub_matches(ctf_matches: &ArgMatches) {
     match ctf_matches.subcommand() {
         ("cfg", Some(cfg_matches)) => {
             handle_cfg_matches(&cfg_matches);
-        }
+        },
         ("mcfg", Some(mcfg_matches)) => {
             handle_mcfg_matches(&mcfg_matches);
         },
@@ -167,14 +167,13 @@ macro_rules! recognise {
     ( $recogniser:expr ) => {
         {
             let mut corpus = String::new();
-            io::stdin().read_to_string(&mut corpus);
+            let _ = io::stdin().read_to_string(&mut corpus);
             for line in corpus.lines() {
                 let word = line.split_whitespace().map(|x| x.to_string()).collect();
                 let parses = $recogniser.recognise(word);
 
                 for Item(conf,parse) in parses {
-                    println!("{:?}", conf);
-                    println!("{:?}", parse);
+                    println!("{}", conf);
                 }
             }
         }
@@ -183,9 +182,128 @@ macro_rules! recognise {
 
 // handle a given cfg grammar with a pda
 pub fn handle_cfg_matches(cfg_matches : &ArgMatches) {
-    println!("cfg\n");
+    let grammar_file = cfg_matches.value_of("grammar").unwrap();
+    let grammar_string = read_file(grammar_file.to_string());
+    let g : CFG<String, String, LogDomain<f64>> = grammar_string.parse().unwrap();
 
-    println!("{:#?}", cfg_matches);
+    let a = PushDownAutomaton::from(g);
+
+    let mut approx_matches = get_approx_args(cfg_matches);
+    
+    let ptk_string = "ptk".to_string();
+    let rlb_string = "rlb".to_string();
+
+    approx_matches.reverse();
+
+    // TODO: this is not very elegant and it is only possible to parse 
+    // explicitly programmed combinations of approximation strategies
+    // the problem is that the strategies do not have the same type and
+    // it is impossible to create a list of Box<dyn ApproximationStrategy<...>>
+    // since ApproximationStrategy itself has generic parameters
+    // currently possible:
+    
+    //      - rlb
+    //      - rlb, ptk
+    //      - ptk
+    //      - ptk, rlb
+
+    // match the first strategy
+    match approx_matches.pop() {
+        // no strategy
+        None => {
+            panic!("You need to choose at least one approximation strategy.");
+        },
+
+        Some((first_strategy, fst_additional)) => {
+            if first_strategy == rlb_string {
+                
+                let rlb_file = fst_additional.unwrap();
+                // create the rlb strategy
+                let classes_string = read_file(rlb_file);
+
+                let e: EquivalenceRelation<String, String> = classes_string.parse().unwrap();
+                let f = |ps: &PushState<_,_>| ps.map(|nt| e.project(nt));
+                let s1 = RlbElement::new(&f);
+
+                // match the second strategy having rlb
+                match approx_matches.pop() {
+                    // no second strategy
+                    // use original macro to create the CoarseToFineRecogniser
+                    None => {
+                        let recogniser = coarse_to_fine_recogniser!(a; s1);
+                        recognise!(recogniser);
+                    },
+
+                    Some((second_strategy, sec_additional)) => {
+                        if second_strategy == ptk_string {
+                            
+                            let k : usize = sec_additional.unwrap().parse().unwrap();
+
+                            let s2 = PDTopKElement::new(k);
+
+                            // try matching a third strategy which is currently not allowed
+                            match approx_matches.pop() {
+                                None => {
+                                    let recogniser = coarse_to_fine_recogniser!(a; s1, s2);
+                                    recognise!(recogniser);
+                                },
+                                Some(_) => {
+                                    panic!("currently you are not allowed to use more than two strategies!");
+                                },
+                            }
+                        } else {
+                            panic!("{} not allowed here", second_strategy);
+                        }
+                    },
+                }
+            } else if first_strategy == ptk_string {
+                
+                // parse the first argument into an integer that limits the pushdown
+                let k : usize = fst_additional.unwrap().parse().unwrap();
+
+                // create the ptk strategy
+                let s1 = PDTopKElement::new(k);
+
+                // match the second strategy having ptk
+                match approx_matches.pop() {
+                    // no second strategy
+                    // use original macro to create the CoarseToFineRecogniser
+                    None => {
+                        let recogniser = coarse_to_fine_recogniser!(a; s1);
+                        recognise!(recogniser);
+                    },
+                    Some((second_strategy, sec_additional)) => {
+                        if second_strategy == rlb_string {
+                            
+                            let rlb_file = sec_additional.unwrap();
+                            // create rlb strategy
+                            let classes_string = read_file(rlb_file);
+                            
+                            let e: EquivalenceRelation<String, String> = classes_string.parse().unwrap();
+                            let f = |ps: &PushState<_,_>| ps.map(|nt| e.project(nt));
+                            let s2 = RlbElement::new(&f);
+
+                            // try matching a fourth strategy which is currently not allowed
+                            match approx_matches.pop() {
+                                None => {
+                                    let recogniser = coarse_to_fine_recogniser!(a; s1, s2);
+                                    recognise!(recogniser);
+                                },
+                                Some(_) => {
+                                    panic!("currently you are not allowed to use more than two strategies!");
+                                },
+                            }
+                        } else {
+                            panic!("{} not allowed here or not implemented yet", second_strategy);
+                        }
+                    },
+                    
+                }
+            } else {
+                panic!("{} not allowed here", first_strategy);
+            }
+        }
+    }
 }
 
 pub fn bench_mcfg(mcfg_matches : &ArgMatches) {
@@ -200,10 +318,10 @@ pub fn bench_mcfg(mcfg_matches : &ArgMatches) {
     
     let corpus_string = read_file(corpus_file);
 
-    let mut file_opt = File::open(equiv_file2).ok();
+    let file_opt = File::open(equiv_file2).ok();
     let equiv_string2_opt = file_opt.map(|mut file| {
         let mut string = String::new();
-        file.read_to_string(&mut string);
+        let _ = file.read_to_string(&mut string);
         string
     });
 
@@ -392,7 +510,7 @@ fn test_sortby() {
 
 // handle a given mcfg grammar with a tsa
 pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
-    println!("mcfg\n");
+
 
     let grammar_file = mcfg_matches.value_of("grammar").unwrap();
     let grammar_string = read_file(grammar_file.to_string());
@@ -408,7 +526,6 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
 
     approx_matches.reverse();
 
-    println!("{:?}", approx_matches);
     // TODO: this is not very elegant and it is only possible to parse 
     // explicitly programmed combinations of approximation strategies
     // the problem is that the strategies do not have the same type and
@@ -428,7 +545,7 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
     match approx_matches.pop() {
         Some((first_strategy, fst_additional)) => {
             if first_strategy == tts_string {
-                println!("tts");
+                
                 // create the tts strategy
                 let s1 = TTSElement::new();
 
@@ -443,7 +560,7 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
 
                     Some((second_strategy, sec_additional)) => {
                         if second_strategy == rlb_string {
-                            println!("rlb");
+                            
                             let rlb_file = sec_additional.unwrap();
                             // create the rlb strategy
                             let classes_string = read_file(rlb_file);
@@ -463,7 +580,7 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
 
                                 Some((third_strategy, trd_additional)) => {
                                     if third_strategy == ptk_string {
-                                        println!("ptk");
+                                        
                                         let k : usize = trd_additional.unwrap().parse().unwrap();
 
                                         let s3 = PDTopKElement::new(k);
@@ -484,7 +601,7 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
                                 },
                             }
                         } else if second_strategy == ptk_string {
-                            println!("ptk");
+                            
                             // parse the second argument into an integer that limits the pushdown
                             let k : usize = sec_additional.unwrap().parse().unwrap();
 
@@ -501,7 +618,7 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
                                 },
                                 Some((third_strategy, trd_additional)) => {
                                     if third_strategy == rlb_string {
-                                        println!("rlb");
+                                        
                                         let rlb_file = trd_additional.unwrap();
                                         // create rlb strategy
                                         let classes_string = read_file(rlb_file);
@@ -531,7 +648,7 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
                     }
                 }
             } else if first_strategy == rlb_string {
-                println!("rlb");
+                
                 let rlb_file = fst_additional.unwrap();
 
                 // create the rlb strategy
@@ -552,7 +669,7 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
 
                     Some((second_strategy, sec_additional)) => {
                         if second_strategy == tts_string {
-                            println!("tts");
+                            
                             let s2 = TTSElement::new();
 
                             // match the third strategy having rlb, tts
@@ -566,7 +683,7 @@ pub fn handle_mcfg_matches(mcfg_matches : &ArgMatches) {
 
                                 Some((third_strategy, trd_additional)) => {
                                     if third_strategy == ptk_string {
-                                        println!("ptk");
+                                        
 
                                         let k : usize = trd_additional.unwrap().parse().unwrap();
 
@@ -619,7 +736,7 @@ pub fn get_approx_args(arg_matches : &ArgMatches) -> Vec<(String, Option<String>
     vec.append(&mut get_tuple_vec(arg_matches, "ptk"));
 
     vec.sort();
-    println!("{:?}", vec);
+
     vec.iter().map(|(_,a,b)| (a.clone(),b.clone())).collect()
 }
 
@@ -656,6 +773,6 @@ fn get_tuple_vec(arg_matches : &ArgMatches, s : &str)
 fn read_file(path: String) -> String {
     let mut file = File::open(path).unwrap();
     let mut string = String::new();
-    file.read_to_string(&mut string);
+    let _ = file.read_to_string(&mut string);
     string
 }

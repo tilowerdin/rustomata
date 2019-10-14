@@ -6,10 +6,29 @@ use std::vec::IntoIter;
 use crate::util::integerisable::Integerisable1;
 use integeriser::{HashIntegeriser, Integeriser};
 
+use std::fmt::{self,Display};
+
 #[derive(Debug, Clone, PartialOrd, Ord)]
 pub enum Pushdown<A> {
     Empty,
     Cons { value: A, below: Rc<Pushdown<A>> },
+}
+
+impl<A: Display> Display for Pushdown<A>
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+
+        match self {
+            Pushdown::Empty => write!(f, "@"),
+            Pushdown::Cons {
+                value,
+                below
+            } => {
+                let below_str = format!("{}", below);
+                write!(f, "{}, {}", below_str, value)
+            },
+        }
+    }
 }
 
 impl<A: PartialEq> PartialEq for Pushdown<A> {
@@ -177,6 +196,8 @@ impl<A: Clone + Eq + Hash> Integerisable1 for Pushdown<A> {
         aint.map(&mut |&v| integeriser.find_value(v).unwrap().clone())
     }
 }
+
+
 
 #[cfg(test)]
 pub mod tests {
