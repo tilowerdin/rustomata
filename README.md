@@ -189,3 +189,25 @@ Rustomata contains several approximation strategies, allowing the transformation
 ## coarse-to-fine parsing
 
 *currently being refactored*
+
+Coarse-to-fine parsing is a feature of rustomata that applies different approximation strategies to an automaton that is created from a given cfg or mcfg grammar and then parses a word using coarse-to-fine parsing.
+
+The coarse-to-fine parsing can be run via the following command:
+
+* for cfg's
+```bash
+cargo run ctf-eval cfg grammar.cfg [Options]
+```
+
+* for mcfg's
+```bash
+cargo run ctf-eval mcfg grammar.mcfg [Options]
+```
+
+The options for the coarse-to-fine parsing approach are the following:
+
+* `--tts`: that applies mcfg → cfg approximation as described under approximation (only available for mcfg's)
+* `--rlb example.classes`: applies cfg → cfg or mcfg → mcfg approximation as described under approximation
+* `--ptk k`: that applies cfg → cfg approximation as described under approximation (only available for cfg's or mcfg's after applying `--tts`)
+
+In order to get started you have to choose at least one of the approximation strategies and each strategy at most once.
