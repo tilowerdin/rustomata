@@ -34,6 +34,7 @@ use std::cmp::min;
 
 use std::ops::MulAssign;
 use num_traits::identities::One;
+use rustomata::approximation::benchmarks;
 
 
 
@@ -138,7 +139,12 @@ pub fn get_sub_command() -> App<'static, 'static> {
                 )
         )
         .subcommand(
-            SubCommand::with_name("test")
+            SubCommand::with_name("bench_mcfg")
+                .author(AUTHOR)
+                .arg(
+                    Arg::with_name("file_name")
+                        .required(true)
+                )
         )
 }
 
@@ -151,7 +157,7 @@ pub fn handle_sub_matches(ctf_matches: &ArgMatches) {
         ("mcfg", Some(mcfg_matches)) => {
             handle_mcfg_matches(&mcfg_matches);
         },
-        ("test", _) => test(),
+        ("bench_mcfg", Some(mcfg_matches)) => bench_mcfg(&mcfg_matches),
         _ => ()
     }
 
@@ -180,6 +186,208 @@ pub fn handle_cfg_matches(cfg_matches : &ArgMatches) {
     println!("cfg\n");
 
     println!("{:#?}", cfg_matches);
+}
+
+pub fn bench_mcfg(mcfg_matches : &ArgMatches) {
+    let file_name = mcfg_matches.value_of("file_name").unwrap();
+    let grammar_file = format!("{}{}", &file_name, ".gr");
+    let equiv_file1 = format!("{}{}", &file_name, ".classes");
+    let equiv_file2 = format!("{}{}", &file_name, "_2.classes");
+    let corpus_file = format!("{}{}", &file_name, ".txt");
+
+    let grammar_string = read_file(grammar_file);
+    let equiv_string1 = read_file(equiv_file1);
+    
+    let corpus_string = read_file(corpus_file);
+
+    let mut file_opt = File::open(equiv_file2).ok();
+    let equiv_string2_opt = file_opt.map(|mut file| {
+        let mut string = String::new();
+        file.read_to_string(&mut string);
+        string
+    });
+
+    let grammar : PMCFG<String, String, LogDomain<f64>> = grammar_string.parse().unwrap();
+    let equiv_rel1 : EquivalenceRelation<String, String> = equiv_string1.parse().unwrap();
+    let equiv_rel2_opt : Option<EquivalenceRelation<String, String>> = equiv_string2_opt.map(|equiv_string2| equiv_string2.parse().unwrap());
+    
+    
+    let mut corpus : Vec<Vec<String>> = 
+        corpus_string.lines()
+                        .map(|l| l.split_whitespace()
+                                    .map(|w| w.to_string())
+                                    .collect())
+                        .filter(|l : &Vec<String>| !l.is_empty())
+                        .collect();
+    // corpus.sort();
+    corpus.sort_by(|a, b| a.len().cmp(&b.len()));
+    // let sentences = corpus.iter().take(10);
+    let corpus = corpus.iter().take(5);
+
+    println!("tested sentences: {:?}", &corpus);
+
+    for sentence in corpus.clone() {
+        println!("{:?}", &sentence);
+    
+        benchmarks::bench_mcfg(
+            file_name.to_string(),
+            grammar.clone(),
+            sentence.clone()
+        );
+
+        benchmarks::bench_mcfg_tts(
+            file_name.to_string(),
+            grammar.clone(),
+            sentence.clone()
+        );
+
+        benchmarks::bench_mcfg_tts_rlb(
+            file_name.to_string(),
+            grammar.clone(),
+            equiv_rel1.clone(),
+            sentence.clone()
+        );
+
+        match equiv_rel2_opt.clone() {
+            Some(equiv_rel2) => {
+                let my_file_name = format!("{}{}", &file_name, "_2");
+                benchmarks::bench_mcfg_tts_rlb(
+                    my_file_name.to_string(),
+                    grammar.clone(),
+                    equiv_rel2,
+                    sentence.clone()
+                );
+            },
+            None => (),
+        }
+
+        benchmarks::bench_mcfg_rlb(
+            file_name.to_string(),
+            grammar.clone(),
+            equiv_rel1.clone(),
+            sentence.clone()
+        );
+
+        match equiv_rel2_opt.clone() {
+            Some(equiv_rel2) => {
+                let my_file_name = format!("{}{}", &file_name, "_2");
+                benchmarks::bench_mcfg_rlb(
+                    my_file_name.to_string(),
+                    grammar.clone(),
+                    equiv_rel2,
+                    sentence.clone()
+                );
+            },
+            None => (),
+        }
+
+        benchmarks::bench_mcfg_rlb_tts(
+            file_name.to_string(),
+            grammar.clone(),
+            equiv_rel1.clone(),
+            sentence.clone()
+        );
+
+        match equiv_rel2_opt.clone() {
+            Some(equiv_rel2) => {
+                let my_file_name = format!("{}{}", &file_name, "_2");
+                benchmarks::bench_mcfg_rlb_tts(
+                    my_file_name.to_string(),
+                    grammar.clone(),
+                    equiv_rel2,
+                    sentence.clone()
+                );
+            },
+            None => (),
+        }
+    }
+
+
+    for ptk in vec![20,15] {
+        for sentence in corpus.clone() {
+            println!("{:?}", &sentence);
+
+            benchmarks::bench_mcfg_tts_rlb_ptk(
+                file_name.to_string(),
+                grammar.clone(),
+                equiv_rel1.clone(),
+                sentence.clone(),
+                ptk
+            );
+
+            match equiv_rel2_opt.clone() {
+                Some(equiv_rel2) => {
+                    let my_file_name = format!("{}{}", &file_name, "_2");
+                    benchmarks::bench_mcfg_tts_rlb_ptk(
+                        my_file_name.to_string(),
+                        grammar.clone(),
+                        equiv_rel2,
+                        sentence.clone(),
+                        ptk
+                    );
+                },
+                None => (),
+            }
+
+            benchmarks::bench_mcfg_tts_ptk(
+                file_name.to_string(),
+                grammar.clone(),
+                sentence.clone(),
+                ptk
+            );
+
+            benchmarks::bench_mcfg_tts_ptk_rlb(
+                file_name.to_string(),
+                grammar.clone(),
+                equiv_rel1.clone(),
+                sentence.clone(),
+                ptk
+            );
+
+            match equiv_rel2_opt.clone() {
+                Some(equiv_rel2) => {
+                    let my_file_name = format!("{}{}", &file_name, "_2");
+                    benchmarks::bench_mcfg_tts_ptk_rlb(
+                        my_file_name.to_string(),
+                        grammar.clone(),
+                        equiv_rel2,
+                        sentence.clone(),
+                        ptk
+                    );
+                },
+                None => (),
+            }
+
+            benchmarks::bench_mcfg_rlb_tts_ptk(
+                file_name.to_string(),
+                grammar.clone(),
+                equiv_rel1.clone(),
+                sentence.clone(),
+                ptk
+            );
+
+            match equiv_rel2_opt.clone() {
+                Some(equiv_rel2) => {
+                    let my_file_name = format!("{}{}", &file_name, "_2");
+                    benchmarks::bench_mcfg_rlb_tts_ptk(
+                        my_file_name.to_string(),
+                        grammar.clone(),
+                        equiv_rel2,
+                        sentence.clone(),
+                        ptk
+                    );
+                },
+                None => (),
+            }
+        }
+    }
+}
+
+#[test]
+fn test_sortby() {
+    let mut v = vec![vec![4,4,4,4],vec![2,2], vec![4], vec![1,1,1]];
+    v.sort_by(|a, b| a.len().cmp(&b.len()));
+    assert_eq!(v, vec![vec![4], vec![2,2], vec![1,1,1], vec![4,4,4,4]]);
 }
 
 // handle a given mcfg grammar with a tsa
@@ -451,216 +659,3 @@ fn read_file(path: String) -> String {
     file.read_to_string(&mut string);
     string
 }
-
-pub fn handle_sub_matches1(ctf_matches: &ArgMatches) {
-
-    // parsen der MCFG
-    let g: PMCFG<String, String, LogDomain<f64>> = GRAMMAR_STRING.parse().unwrap();
-
-    let a  : 
-    TreeStackAutomaton<
-        PosState<
-            PMCFGRule<
-                String, 
-                String, 
-                LogDomain<f64>
-            >
-        >, 
-        String, 
-        LogDomain<f64>
-    > = TreeStackAutomaton::from(g);
-
-    // print("TreeStackAutomaton a", &a);
-    
-    let tts = TTSElement::new();
-
-    let rel : EquivalenceRelation<PMCFGRule<_,_,_>,String> 
-        = EquivalenceRelation::from_str(CLASSES_STRING).unwrap();
-    let mapping = |ps: &PosState<_>| ps.map(|nt| rel.project(nt));
-    let rlb = RlbElement::new(&mapping);
-
-    // let rec = coarse_to_fine_recogniser!(a;
-    //     tts, 
-    //     rlb);
-
-
-    let (aut0, strat_inst0) 
-    // :
-    // (
-    //     PushDownAutomaton<
-    //         PosState<
-    //             PMCFGRule<
-    //                 String, 
-    //                 String, 
-    //                 LogDomain<f64>
-    //             >
-    //         >, 
-    //         String, 
-    //         LogDomain<f64>
-    //     >
-    //     , _
-    // ) 
-    = tts.approximate_automaton(&a);
-
-    // print("approximated automaton aut0", &aut0);
-    
-
-    let (aut1, strat_inst1) = rlb.approximate_automaton(&aut0);
-    print("approximated automaton aut1", &aut1);
-
-    for key in strat_inst1.reverse_transition_map.keys() {
-        println!("---------- {} ----------", &key);
-        if let Some(list) = strat_inst1.reverse_transition_map.get(key) {
-            for l in list {
-                println!("{}", l);
-            }
-        }
-        println!();
-    }
-    
-
-    let corpus = String::from("a c\n");
-    // let n = 1;
-    for sentence in corpus.lines() {
-        let word :Vec<_>= sentence.split_whitespace().map(|x| x.to_string()).collect();
-        let word1 = word.clone();
-        let word2 = word.clone();
-
-        let erga = a.recognise(word);
-        // for Item(conf,ts) in erga {
-        //     print("a.recognise(word) conf", &conf);
-        //     printDebug("a.recognise(word) ts", &ts);
-        // }
-
-        let ergaut0 = aut0.recognise(word1);
-        // for Item(conf,pd) in ergaut0 {
-        //     print("aut0.recognise(word) conf", &conf);
-        //     printDebug("aut0.recognise(word) pd", &pd);
-        // }
-
-        let ergaut1 = aut1.recognise(word2);
-        for Item(conf,pd) in ergaut1 {
-            // print("aut1.recognise(word) conf", &conf);
-            // printDebug("aut1.recognise(word) pd", &pd);
-
-            let transs : Vec<_> = pd.clone().into();
-            for trans in &transs {
-                print("Transition of pd", trans);
-                let unapp_transs = strat_inst1.unapproximate_transition(trans);
-                for unapp_trans in unapp_transs {
-                    print("unapproximated transs", &unapp_trans);
-                }
-                
-            }
-
-
-
-            let r0s = strat_inst1.unapproximate_run(pd);
-            for r0 in r0s {
-                print_debug("unapproximated run r0", &r0);
-                
-                let checked_runs0 = aut0.check_run(r0);
-                for Item(cr0conf, cr0pd) in checked_runs0 {
-                    print("checkedRun conf", &cr0conf);
-                    print_debug("checkedRun pd", &cr0pd);
-
-                    let rs = strat_inst0.unapproximate_run(cr0pd);
-                    for r in rs {
-                        print_debug("unapproximated run r", &r);
-
-                        let checked_runs = a.check_run(r);
-                        for Item(crconf, crts) in checked_runs {
-                            print("checkedRun conf", &crconf);
-                            print_debug("checkedRun ts", &crts);
-                        }
-                    }
-                }
-            }
-        }
-        
-
-        // let mut forest0 : i32 = aut1.recognise(word);
-
-        // let mut forest : Vec<_> = rec.recognise(word).collect();
-        
-        // for parse in &forest {
-        //     println!("{:?}", parse);
-        // }
-        // println!();
-
-    }
-}
-
-fn print<T>(title: &str, anything: &T)
-where
-    T: Display
-{
-    println!("---------- {} ----------", title);
-    println!("{}", anything);
-    println!();
-}
-
-fn print_debug<T>(title: &str, anything: &T)
-where
-    T: Debug
-{
-    println!("---------- {} ----------", title);
-    println!("{:?}", anything);
-    println!();
-}
-
-pub fn test() {
-    let g : PMCFG<String, String, LogDomain<f64>> = GRAMMAR_STRING.parse().unwrap();
-
-    let a = TreeStackAutomaton::from(g);
-
-    let rel : EquivalenceRelation<PMCFGRule<_,_,_>,String> = EquivalenceRelation::from_str(CLASSES_STRING2).unwrap();
-    let mapping = |ps: &PosState<_>| ps.map(|nt| rel.project(nt));
-    let rlb = RlbElementTSA::new(&mapping);
-
-    let recogniser = coarse_to_fine_recogniser!(a; rlb);
-
-    let input = vec!["a","a","c","c"].iter().map(|a| a.to_string()).collect();
-
-    let runs = recogniser.recognise(input);
-
-    for run in runs {
-        println!("rec recognised");
-    }
-}
-
-pub fn test1() {
-    let g: PMCFG<String, String, LogDomain<f64>> = GRAMMAR_STRING.parse().unwrap();
-
-    let a = TreeStackAutomaton::from(g);
-
-    println!("{}", a);
-
-    let rel : EquivalenceRelation<PMCFGRule<_,_,_>,String> 
-        = EquivalenceRelation::from_str(CLASSES_STRING).unwrap();
-    let mapping = |ps: &PosState<_>| ps.map(|nt| rel.project(nt));
-    let rlb = RlbElementTSA::new(&mapping);
-
-    let (b,s) = rlb.approximate_automaton(&a);
-
-    println!("{}", b);
-
-    let input = vec!["a","a","c","c"].iter().map(|a| a.to_string()).collect();
-
-    let b_runs = b.recognise(input);
-    for Item(_,b_run) in b_runs {
-        println!("b_run");
-        let unapproxs = s.unapproximate_run(b_run);
-        for unapprox in unapproxs {
-            println!("unapprox");
-            let a_runs = a.check_run(unapprox);
-            for Item(_,a_run) in a_runs {
-                println!("a_run");
-                
-            }
-        }
-    }
-
-}
-
-
